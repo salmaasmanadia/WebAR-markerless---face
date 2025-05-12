@@ -19,7 +19,7 @@
         <h2>WebXR AR Experience Loading</h2>
         <p>Please wait while we set up your AR experience...</p>
         <div id="ar-message">Checking for AR support...</div>
-        <button id="start-button" style="display:none">Enter AR</button>
+        <button id="start-ar" style="display:none">Enter AR</button>
     </div>
 
     <!-- Performance Stats Display -->
@@ -28,8 +28,8 @@
         <div>Latency: <span id="latency">0</span> ms</div>
         <div>Memory: <span id="memory">0</span> MB</div>
         <div>Tracking: <span id="tracking">N/A</span></div>
-        <div>CPU Usage: <span id="cpu-usage">0</span>%</div>
-        <div>GPU: <span id="gpu-info">Unknown</span></div>
+        <div>CPU Usage: <span id="cpu">0</span>%</div>
+        <div>GPU: <span id="gpu">Unknown</span></div>
     </div>
 
     <!-- Instructions -->
@@ -42,13 +42,13 @@
         <button class="control-button" id="place-btn" title="Place Object">📌</button>
         <button class="control-button" id="rotate-btn" title="Rotate Object">🔄</button>
         <button class="control-button" id="remove-btn" title="Remove Object">🗑️</button>
-        <button class="control-button" id="model-btn" title="Change Model">📦</button>
+        <button class="control-button" id="next-model-btn" title="Change Model">📦</button>
     </div>
 
     <!-- Size Controls -->
     <div id="size-controls">
-        <button class="control-button" id="size-up" title="Increase Size">+</button>
-        <button class="control-button" id="size-down" title="Decrease Size">-</button>
+        <button class="control-button" id="scale-up-btn" title="Increase Size">+</button>
+        <button class="control-button" id="scale-down-btn" title="Decrease Size">-</button>
     </div>
 
     <!-- Notification Area -->
@@ -81,9 +81,12 @@
     </div>
 
     <!-- Custom Scripts -->
-    <script src="js/html-components.js"></script>
+    <script src="js/ui-manager-ar.js"></script>
     <script src="js/performance-tracker.js"></script>
     <script src="js/ar-manager.js"></script>
+    <script src="js/ios-ar-manager.js"></script>
+    <script src="js/html-components.js"></script>
+    <script src="js/ui-visibility.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
