@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World-Locked WebXR AR with Performance Tracking</title>
+    <!-- CSS Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Library Imports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.8.4/axios.min.js"></script>
+    <!-- GLTFLoader for 3D models -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <h2>WebXR AR Experience Loading</h2>
+        <p>Please wait while we set up your AR experience...</p>
+        <div id="ar-message">Checking for AR support...</div>
+        <button id="start-button" style="display:none">Enter AR</button>
+    </div>
+
+    <!-- AR Overlay - Single instance -->
+    <div id="ar-overlay">
+        <div id="reticle-container"></div>
+    </div>
+
+    <!-- Performance Stats Display -->
+    <div id="performance-stats">
+        <div>FPS: <span id="fps">0</span></div>
+        <div>Latency: <span id="latency">0</span> ms</div>
+        <div>Memory: <span id="memory">0</span> MB</div>
+        <div>Tracking: <span id="tracking">N/A</span></div>
+    </div>
+
+    <!-- Instructions -->
+    <div id="instructions">
+        Move your device to scan the area. Tap to place 3D object.
+    </div>
+
+    <!-- Control Buttons -->
+    <div id="control-panel">
+        <button class="control-button" id="place-btn" title="Place Object">📌</button>
+        <button class="control-button" id="rotate-btn" title="Rotate Object">🔄</button>
+        <button class="control-button" id="remove-btn" title="Remove Object">🗑️</button>
+        <button class="control-button" id="model-btn" title="Change Model">📦</button>
+    </div>
+
+    <!-- Size Controls -->
+    <div id="size-controls">
+        <button class="control-button" id="size-up" title="Increase Size">+</button>
+        <button class="control-button" id="size-down" title="Decrease Size">-</button>
+    </div>
+
+    <!-- Notification Area -->
+    <div id="ar-notification"></div>
+
+    <!-- AR Mode Indicator -->
+    <div id="ar-mode-indicator">
+        <span>World-Locked AR</span>
+    </div>
+
+    <!-- Help Panel -->
+    <div id="help-panel">
+        <h3>How to Use This AR Experience</h3>
+        <ol>
+            <li>Allow camera access when prompted</li>
+            <li>Slowly scan your environment</li>
+            <li>Tap "Place Object" when ready</li>
+            <li>Use pinch gestures to resize</li>
+            <li>Use rotate button to change orientation</li>
+        </ol>
+        <button id="got-it">Got it</button>
+    </div>
+
+    <!-- Model Info Panel -->
+    <div id="model-info">
+        <div>Current Model: <span id="current-model-name">Loading...</span></div>
+        <div>Scale: <span id="current-scale">1.0</span>x</div>
+    </div>
+
+    <!-- Custom Scripts -->
+    <script src="js/html-components.js"></script>
+    <script src="js/performance-tracker.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/ui-visibility.js"></script>
+    <script src="js/ios-ar-adapter.js"></script>
+    <script src="js/AR-camera.js"></script>
+</body>
+</html>
