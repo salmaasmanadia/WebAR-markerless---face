@@ -48,11 +48,39 @@ class PerformanceTracker {
             tracking: document.getElementById('tracking')
         };
 
+   // Add properties for CPU and GPU
+        this.cpuUsage = 0;
+        this.gpuUsage = 0; // Placeholder for GPU usage
         // Initialize
         this._initPerformanceObserver();
         this._initEventListeners();
     }
-
+ // Method to update CPU and RAM usage
+    updateCPUAndRAM() {
+        // Update RAM usage
+        if (performance.memory) {
+            this.metrics.memory = Math.round(performance.memory.usedJSHeapSize / (1024 * 1024));
+        }
+        // Update CPU usage (this is a simple approximation)
+        navigator.getBattery().then(battery => {
+            this.cpuUsage = battery.level * 100; // Example: using battery level as CPU usage
+        });
+        // Update GPU usage (you may need a library or custom implementation)
+        this.gpuUsage = this.getGPUInfo(); // Implement this method to get GPU info
+    }
+    // Example method to get GPU info
+    getGPUInfo() {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl');
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        return debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown GPU';
+    }
+    // Update loop for performance tracking
+    _updateLoop() {
+        this.markFrame();
+        this.updateCPUAndRAM(); // Call the new method
+        requestAnimationFrame(() => this._updateLoop());
+    }
     /**
      * Initialize Performance Observer (if available)
      * @private
@@ -328,6 +356,14 @@ class PerformanceTracker {
                 this.elements.memory.textContent = "N/A";
             }
         }
+
+         // Update CPU and GPU display
+    if (this.elements.cpu) {
+        this.elements.cpu.textContent = this.cpuUsage.toFixed(2);
+    }
+    if (this.elements.gpu) {
+        this.elements.gpu.textContent = this.gpuUsage;
+    }
     }
 
     /**
