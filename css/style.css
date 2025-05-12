@@ -1,6 +1,6 @@
-/* === AR Experience - Optimized CSS === */
 
-/* Base Variables */
+/* === AR Experience Enhancements === */
+
 :root {
     --primary-color: #00e0a5;
     --accent-color: #00ffd2;
@@ -17,283 +17,8 @@
     --border-radius: 10px;
 }
 
-/* === Base Styles === */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Arial', sans-serif;
-    overflow: hidden;
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    color: var(--text-color);
-}
 
-/* === Loading Screen === */
-#loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    color: white;
-    text-align: center;
-    padding: 20px;
-}
-
-.loader,
-.loading-spinner {
-    border: 5px solid rgba(255, 255, 255, 0.3);
-    border-top: 5px solid var(--primary-color);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 2s linear infinite;
-    margin-bottom: 20px;
-}
-
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border-width: 3px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.loading-text {
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-/* === Buttons === */
-#start-button, 
-.tutorial-button.primary, 
-#got-it {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 15px 25px;
-    font-size: 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    z-index: 3000;
-}
-
-#start-button:hover,
-.tutorial-button.primary:hover,
-#got-it:hover {
-    background-color: var(--primary-dark);
-    transform: scale(1.05);
-}
-
-/* === Control Elements === */
-#performance-stats {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    background-color: var(--bg-color);
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-size: 14px;
-    z-index: 2000;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-#instructions {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--bg-color);
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    z-index: 1900;
-    text-align: center;
-    max-width: 90%;
-    pointer-events: none;
-}
-
-#control-panel {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 15px;
-    z-index: 2000;
-    transition: opacity 0.3s ease;
-    justify-content: center;
-}
-
-.control-button {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.6);
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-    pointer-events: auto;
-}
-
-.control-button:hover {
-    background-color: rgba(0, 0, 0, 0.8);
-    transform: scale(1.05);
-}
-
-.control-button:active {
-    transform: translateY(0);
-}
-
-.control-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-#size-controls {
-    position: fixed;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 2000;
-    transition: opacity 0.3s ease;
-}
-
-#model-info {
-    position: fixed;
-    bottom: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--bg-color);
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-size: 14px;
-    z-index: 2000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* === Notification System === */
-#ar-notification {
-    position: fixed;
-    bottom: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--bg-color);
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    z-index: 2100;
-    opacity: 0;
-    transition: opacity 0.5s;
-    max-width: 80%;
-    text-align: center;
-}
-
-#ar-notification.visible {
-    opacity: 1;
-}
-
-/* === Help Panel === */
-#help-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: var(--bg-color);
-    padding: 25px;
-    border-radius: 12px;
-    z-index: 2500;
-    width: 85%;
-    max-width: 350px;
-    max-height: 80%;
-    overflow: auto;
-    box-shadow: var(--shadow);
-    display: none;
-}
-
-#help-panel h3 {
-    margin-top: 0;
-    color: var(--primary-light);
-}
-
-#help-panel ol {
-    padding-left: 20px;
-    margin-bottom: 25px;
-    text-align: left;
-}
-
-#help-panel li {
-    margin-bottom: 10px;
-    color: var(--text-secondary);
-}
-
-/* === Reticle === */
-#reticle-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 1900;
-}
-
-#reticle {
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--primary-color);
-    border-radius: 50%;
-    opacity: 0.8;
-    position: relative;
-}
-
-#reticle::before, #reticle::after {
-    content: '';
-    position: absolute;
-    background-color: var(--primary-color);
-}
-
-#reticle::before {
-    width: 2px;
-    height: 15px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-#reticle::after {
-    width: 15px;
-    height: 2px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
+/* Additional styles to improve the WebXR world-locked AR experience */
 
 /* === Object Placement Indicator === */
 .placement-indicator {
@@ -337,7 +62,7 @@ body {
     100% { transform: scale(0.95); opacity: 0.8; }
 }
 
-/* === Object Selection & Manipulation === */
+/* === Object Selection === */
 .object-selected {
     outline: 2px solid var(--primary-light);
     animation: selected-pulse 1.5s infinite;
@@ -349,36 +74,7 @@ body {
     100% { outline-color: var(--primary-light); }
 }
 
-.object-handle {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: var(--primary-color);
-    border: 2px solid white;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    z-index: 90;
-    transition: transform 0.2s ease;
-}
-
-.object-handle:hover {
-    transform: scale(1.2);
-}
-
-.handle-rotate {
-    background-color: var(--primary-light);
-}
-
-.handle-scale {
-    background-color: var(--accent-color);
-}
-
-.handle-translate {
-    background-color: var(--warning-color);
-}
-
-/* === Surface Detection === */
+/* === Surface Detection Visualization === */
 .surface-marker {
     position: absolute;
     background-color: rgba(0, 224, 165, 0.2);
@@ -389,7 +85,7 @@ body {
     z-index: 40;
 }
 
-/* === Tracking Status === */
+/* === Tracking Status Indicator === */
 .tracking-status {
     position: fixed;
     top: 20px;
@@ -397,7 +93,7 @@ body {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    z-index: 2000;
+    z-index: 100;
     transition: all 0.3s ease;
 }
 
@@ -542,12 +238,43 @@ body {
     text-align: center;
 }
 
+/* === Object Manipulation Handles === */
+.object-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    border: 2px solid white;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    z-index: 90;
+    transition: transform 0.2s ease;
+}
+
+.object-handle:hover {
+    transform: scale(1.2);
+}
+
+.handle-rotate {
+    background-color: var(--primary-light);
+}
+
+.handle-scale {
+    background-color: var(--accent-color);
+}
+
+.handle-translate {
+    background-color: var(--warning-color);
+}
+
 /* === Progress Indicators === */
 .circular-progress {
     position: relative;
     width: 40px;
     height: 40px;
     border-radius: 50%;
+    /* Fixed conic-gradient syntax */
     background: conic-gradient(var(--primary-color) calc(var(--progress, 0%) * 3.6deg), transparent 0deg);
     display: flex;
     justify-content: center;
@@ -720,6 +447,11 @@ body {
     transition: all 0.2s ease;
 }
 
+.tutorial-button.primary {
+    background-color: var(--primary-color);
+    font-weight: 600;
+}
+
 .tutorial-button:hover {
     background-color: var(--primary-dark);
 }
@@ -744,154 +476,7 @@ body {
     transform: scale(1.2);
 }
 
-/* === AR Mode Specific Styles === */
-.ar-mode-indicator {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.7);
-    color: var(--success-color);
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    z-index: 2000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    font-weight: bold;
-}
-
-/* AR transition effect */
-.ar-transition {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at center, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.8) 100%);
-    z-index: 600;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-}
-
-.ar-transition.active {
-    opacity: 1;
-}
-
-/* AR UI visibility fixes */
-.ar-active {
-    display: flex !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    z-index: 2000 !important;
-}
-
-/* AR Controls container styles */
-#control-panel.ar-active {
-    bottom: 20px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background-color: rgba(0, 0, 0, 0.7) !important;
-    padding: 10px !important;
-    border-radius: 30px !important;
-}
-
-#size-controls.ar-active {
-    right: 20px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    background-color: rgba(0, 0, 0, 0.7) !important;
-    padding: 10px !important;
-    border-radius: 30px !important;
-}
-
-/* AR button styles */
-.ar-mode-active .control-button {
-    background-color: rgba(30, 30, 30, 0.8) !important;
-    border: 2px solid var(--accent-color) !important;
-    color: white !important;
-}
-
-/* AR UI elements with backdrop filter */
-.ar-ui-element {
-    backdrop-filter: blur(5px) !important;
-    -webkit-backdrop-filter: blur(5px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    z-index: 2000 !important;
-    pointer-events: none;
-}
-
-body.ar-mode-active .ar-ui-element {
-    opacity: 1;
-    pointer-events: none;
-}
-
-body.ar-mode-active .control-button {
-    pointer-events: auto;
-}
-
-/* Display force utility class */
-.display-force {
-    display: block !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    z-index: 2000 !important;
-}
-
-/* Exit AR button style */
-#exit-ar-btn {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    width: 40px !important;
-    height: 40px !important;
-    background-color: rgba(0, 0, 0, 0.7) !important;
-    border: 2px solid var(--danger-color) !important;
-    color: white !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    font-size: 20px !important;
-    z-index: 2100 !important;
-    cursor: pointer !important;
-}
-
-/* WebXR canvas specific style */
-canvas.xr-canvas {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    z-index: 1 !important;
-    touch-action: none;
-}
-
-/* Fix for iOS camera issues */
-.xr-canvas {
-    position: absolute !important;
-    z-index: 1 !important;
-    touch-action: none;
-}
-
-/* === AR Mode Indicator === */
-#ar-mode-indicator {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0,0,0,0.5);
-    padding: 8px 12px;
-    border-radius: 5px;
-    font-size: 14px;
-    z-index: 2000;
-}
-
-/* === Responsive Styles === */
-/* For small heights */
+/* === Responsive Design Enhancements === */
 @media (max-height: 600px) {
     #control-panel {
         gap: 12px;
@@ -926,24 +511,15 @@ canvas.xr-canvas {
     }
 }
 
-/* For smaller screens */
-@media (max-width: 480px) {
-    #performance-stats {
-        font-size: 12px;
-    }
-    
-    #ar-mode-indicator {
-        font-size: 12px;
-    }
-    
-    .control-button {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
+/* === Dark Mode Enhancements === */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: rgba(20, 22, 30, 0.9);
+        --bg-light: rgba(30, 34, 46, 0.8);
     }
 }
 
-/* For landscape orientation */
+/* === Landscape Orientation Adjustments === */
 @media (orientation: landscape) and (max-height: 500px) {
     #control-panel {
         right: 20px;
@@ -985,10 +561,591 @@ canvas.xr-canvas {
     }
 }
 
-/* Dark mode preference */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg-color: rgba(20, 22, 30, 0.9);
-        --bg-light: rgba(30, 34, 46, 0.8);
-    }
+/* === Loading Animations === */
+.model-loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    z-index: 150;
 }
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--accent-color);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* === AR Session Transition Effects === */
+.ar-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.8) 100%);
+    z-index: 600;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+}
+
+.ar-transition.active {
+    opacity: 1;
+}
+
+/* === Button States === */
+.control-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Base styles for general elements */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+    background-color: #000;
+    color: var(--text-color);
+}
+
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+}
+
+.loader {
+    border: 5px solid rgba(255,255,255,0.3);
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 2s linear infinite;
+    margin-bottom: 20px;
+}
+
+#start-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s;
+}
+
+#start-button:hover {
+    background-color: var(--primary-dark);
+}
+
+#performance-stats {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background-color: var(--bg-color);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#instructions {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-color);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 80;
+    text-align: center;
+    max-width: 90%;
+}
+
+#control-panel {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+}
+
+.control-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--bg-color);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: var(--shadow);
+    transition: all 0.2s ease;
+}
+
+.control-button:hover {
+    background-color: var(--primary-color);
+    transform: translateY(-3px);
+}
+
+.control-button:active {
+    transform: translateY(0);
+}
+
+#size-controls {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 100;
+}
+
+#ar-notification {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-color);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 110;
+    opacity: 0;
+    transition: opacity 0.5s;
+    max-width: 80%;
+    text-align: center;
+}
+
+#ar-notification.visible {
+    opacity: 1;
+}
+
+#help-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--bg-color);
+    padding: 25px;
+    border-radius: 12px;
+    z-index: 950;
+    width: 85%;
+    max-width: 350px;
+    box-shadow: var(--shadow);
+    display: none;
+}
+
+#help-panel h3 {
+    margin-top: 0;
+    color: var(--primary-light);
+}
+
+#help-panel ol {
+    padding-left: 20px;
+    margin-bottom: 25px;
+}
+
+#help-panel li {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+#got-it {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#got-it:hover {
+    background-color: var(--primary-dark);
+}
+
+#model-info {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-color);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 90;
+}
+
+#reticle-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 80;
+}
+
+#reticle {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    opacity: 0.8;
+    position: relative;
+}
+
+#reticle::before, #reticle::after {
+    content: '';
+    position: absolute;
+    background-color: var(--primary-color);
+}
+
+#reticle::before {
+    width: 2px;
+    height: 15px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#reticle::after {
+    width: 15px;
+    height: 2px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Gaya tambahan untuk mode AR */
+
+/* Pastikan elemen UI terlihat jelas dalam mode AR */
+#control-panel.ar-active {
+    z-index: 1000;
+    background-color: var(--bg-color); /* Menggunakan warna latar belakang dari variabel CSS */
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+#size-controls.ar-active {
+    z-index: 1000;
+    background-color: var(--bg-color);
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Indikator mode AR */
+.ar-mode-indicator {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--primary-color);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Ketika XR session aktif */
+.webxr-session-active #control-panel,
+.webxr-session-active #size-controls,
+.webxr-session-active #performance-stats,
+.webxr-session-active #model-info,
+.webxr-session-active #instructions {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Menggunakan backdrop-filter untuk membuat elemen UI lebih terlihat di atas kamera AR */
+#control-panel.ar-active,
+#size-controls.ar-active,
+#performance-stats,
+#model-info,
+#instructions,
+#help-panel {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Memastikan tombol kontrol terlihat jelas dengan bayangan yang lebih tebal */
+.ar-active .control-button {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+
+/* AR UI Styles */
+.ar-mode-indicator {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #4CAF50;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 2000;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+#control-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+    transition: opacity 0.3s ease;
+}
+
+#control-panel.ar-active {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 30px;
+}
+
+#size-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+    transition: opacity 0.3s ease;
+}
+
+#size-controls.ar-active {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 20px;
+}
+
+.control-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.control-button:active {
+    background-color: #f0f0f0;
+    transform: scale(0.95);
+}
+
+#ar-notification {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 16px;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+/* Ensure max z-index for AR UI elements */
+.ar-ui-element {
+    z-index: 10000 !important;
+}
+
+/* Display override for AR mode */
+.display-force {
+    display: block !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* 
+ * AR Mode CSS Fixes
+ * These styles ensure UI controls remain visible during AR sessions
+ */
+
+/* Make AR controls always visible with higher z-index */
+.ar-active {
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 2000 !important;
+  }
+  
+  /* Mode indicator should be clearly visible */
+  #ar-mode-indicator {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #4CAF50;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    z-index: 2000;
+    transition: opacity 0.3s ease;
+  }
+  
+  /* Control panel must stay visible in AR mode */
+  #control-panel.ar-active {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex !important;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 30px;
+    padding: 10px;
+    z-index: 2000;
+  }
+  
+  /* Size controls must stay visible in AR mode */
+  #size-controls.ar-active {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex !important;
+    flex-direction: column;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 30px;
+    padding: 10px;
+    z-index: 2000;
+  }
+  
+  /* Better visibility for control buttons */
+  .control-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: rgba(60, 60, 60, 0.8);
+    color: white;
+    border: 2px solid rgba(100, 255, 100, 0.7);
+    margin: 0 5px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  
+  /* Performance stats should be visible but not intrusive */
+  #performance-stats {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 2000;
+  }
+  
+  /* Model info display */
+  #model-info {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    text-align: center;
+    z-index: 2000;
+  }
+  
+  /* Instructions overlay */
+  #instructions {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 80%;
+    z-index: 1999;
+  }
+  
+  /* Notification style */
+  #ar-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 25px;
+    text-align: center;
+    z-index: 2001;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }

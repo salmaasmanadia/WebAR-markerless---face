@@ -88,190 +88,171 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
- /**
- * Start the AR experience
- */
-function startExperience() {
-    // Start the WebXR session
-    arManager.startARSession();
-    
-    // Communicate AR state to UI manager
-    if (uiManager) {
-        uiManager.state.isARActive = true;
-    }
-    
-    // Hide loading screen with animation
-    if (loadingScreen) {
-        loadingScreen.style.opacity = '0';
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-            isLoading = false;
-            
-            // Show helpful instructions
-            showNotification('Move your device to detect surfaces, tap to place objects', 5000);
-        }, 500);
-    }
-    
-    // Apply AR-specific classes to body for global CSS targeting
-    document.body.classList.add('ar-mode-active');
-}
-
-/**
- * Ensure UI visibility in AR mode
- */
-function ensureUIVisibility() {
-    const isARActive = arManager && arManager.state && arManager.state.isARActive;
-    
-    if (isARActive) {
-        // Force UI visibility
-        const controlPanel = document.getElementById('control-panel');
-        const sizeControls = document.getElementById('size-controls');
+    /**
+     * Start the AR experience
+     */
+    function startExperience() {
+        // Start the WebXR session
+        arManager.startARSession();
         
-        if (controlPanel) {
-            controlPanel.style.display = 'flex';
-            controlPanel.style.opacity = '1';
-            controlPanel.style.pointerEvents = 'auto';
-            controlPanel.classList.add('display-force');
+        // Hide loading screen with animation
+        if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                isLoading = false;
+                
+                // Show helpful instructions
+                showNotification('Move your device to detect surfaces, tap to place objects', 5000);
+            }, 500);
+        }
+    }
+    
+    /**
+     * Update tracking quality based on FPS and hit test results
+     */
+    function updateTrackingQuality() {
+        const fps = performanceTracker.metrics.fps;
+        let quality = 'Unknown';
+        
+        // Get hit test results if available
+        const hitTestResults = arManager.state ? arManager.state.xrHitTestResults : [];
+        
+        // Determine quality based on FPS and hit test results
+        if (fps > 45 && hitTestResults && hitTestResults.length > 0) {
+            quality = 'Excellent';
+            performanceTracker.elements.tracking.style.color = '#4CAF50'; // Green
+        } else if (fps > 30 && hitTestResults && hitTestResults.length > 0) {
+            quality = 'Good';
+            performanceTracker.elements.tracking.style.color = '#8BC34A'; // Light Green
+        } else if (fps > 20) {
+            quality = 'Fair';
+            performanceTracker.elements.tracking.style.color = '#FFC107'; // Amber
+        } else {
+            quality = 'Poor';
+            performanceTracker.elements.tracking.style.color = '#F44336'; // Red
         }
         
-        if (sizeControls) {
-            sizeControls.style.display = 'flex';
-            sizeControls.style.opacity = '1';
-            sizeControls.style.pointerEvents = 'auto';
-            sizeControls.classList.add('display-force');
+        performanceTracker.setTrackingQuality(quality);
+    }
+    
+    /**
+     * Show notification message
+     * @param {string} message - Message to display
+     * @param {number} duration - Duration in milliseconds
+     */
+    function showNotification(message, duration = 3000) {
+        if (uiManager) {
+            uiManager.showNotification(message, duration);
+        } else {
+            // Fallback if UI manager isn't ready
+            const notification = document.getElementById('ar-notification');
+            if (notification) {
+                notification.textContent = message;
+                notification.style.opacity = '1';
+                
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, duration);
+            }
+        }
+    }
+    
+    /**
+     * Setup event listeners for UI controls
+     */
+    function setupEventListeners() {
+        // Start button
+        if (startButton) {
+            startButton.addEventListener('click', startExperience);
         }
         
-        // Add classes to other UI elements
-        const uiElements = [
-            'model-info', 'instructions', 'performance-stats'
-        ];
-        
-        uiElements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.style.display = 'block';
-                element.style.opacity = '1';
-                element.classList.add('display-force');
-            }
-        });
-    }
-}
-
-/**
- * Setup event listeners for UI controls
- */
-function setupEventListeners() {
-    // Start button
-    if (startButton) {
-        startButton.addEventListener('click', startExperience);
-    }
-    
-    // Place button
-    if (placeBtn) {
-        placeBtn.addEventListener('click', () => {
-            arManager.placeObject();
-        });
-        // Add AR UI class
-        placeBtn.classList.add('ar-ui-element');
-    }
-    
-    // Rotate button
-    if (rotateBtn) {
-        rotateBtn.addEventListener('click', () => {
-            arManager.rotateObject(45);
-        });
-        // Add AR UI class
-        rotateBtn.classList.add('ar-ui-element');
-    }
-    
-    // Remove button
-    if (removeBtn) {
-        removeBtn.addEventListener('click', () => {
-            arManager.removeObject();
-        });
-        // Add AR UI class
-        removeBtn.classList.add('ar-ui-element');
-    }
-    
-    // Model button
-    if (modelBtn) {
-        modelBtn.addEventListener('click', () => {
-            arManager.nextModel();
-        });
-        // Add AR UI class
-        modelBtn.classList.add('ar-ui-element');
-    }
-    
-    // Size up button
-    if (sizeUpBtn) {
-        sizeUpBtn.addEventListener('click', () => {
-            arManager.increaseScale();
-        });
-        // Add AR UI class
-        sizeUpBtn.classList.add('ar-ui-element');
-    }
-    
-    // Size down button
-    if (sizeDownBtn) {
-        sizeDownBtn.addEventListener('click', () => {
-            arManager.decreaseScale();
-        });
-        // Add AR UI class
-        sizeDownBtn.classList.add('ar-ui-element');
-    }
-    
-    // Add periodic visibility check to ensure UI stays visible
-    setInterval(ensureUIVisibility, 2000);
-    
-    // Handle device orientation changes
-    window.addEventListener('orientationchange', () => {
-        // Give time for the resize to complete
-        setTimeout(() => {
-            if (uiManager) {
-                uiManager._adjustUIForScreen();
-                // Re-ensure UI visibility after orientation change
-                ensureUIVisibility();
-            }
-        }, 300);
-    });
-    
-    // Handle keyboard shortcuts
-    document.addEventListener('keydown', (event) => {
-        if (isLoading) return;
-        
-        switch (event.key) {
-            case ' ':  // Space bar
+        // Place button
+        if (placeBtn) {
+            placeBtn.addEventListener('click', () => {
                 arManager.placeObject();
-                break;
-            case 'Delete':
-            case 'Backspace':
-                arManager.removeObject();
-                break;
-            case 'ArrowUp':
-                arManager.increaseScale();
-                break;
-            case 'ArrowDown':
-                arManager.decreaseScale();
-                break;
-            case 'r':
-            case 'R':
-                arManager.rotateObject(45);
-                break;
-            case 'm':
-            case 'M':
-                arManager.nextModel();
-                break;
-            case 'Escape':
-                // End AR session
-                arManager.endARSession();
-                // Remove AR mode class
-                document.body.classList.remove('ar-mode-active');
-                break;
+            });
         }
-    });
-}
+        
+        // Rotate button
+        if (rotateBtn) {
+            rotateBtn.addEventListener('click', () => {
+                arManager.rotateObject(45);
+            });
+        }
+        
+        // Remove button
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                arManager.removeObject();
+            });
+        }
+        
+        // Model button
+        if (modelBtn) {
+            modelBtn.addEventListener('click', () => {
+                arManager.nextModel();
+            });
+        }
+        
+        // Size up button
+        if (sizeUpBtn) {
+            sizeUpBtn.addEventListener('click', () => {
+                arManager.increaseScale();
+            });
+        }
+        
+        // Size down button
+        if (sizeDownBtn) {
+            sizeDownBtn.addEventListener('click', () => {
+                arManager.decreaseScale();
+            });
+        }
+        
+        // Handle device orientation changes
+        window.addEventListener('orientationchange', () => {
+            // Give time for the resize to complete
+            setTimeout(() => {
+                if (uiManager) {
+                    uiManager._adjustUIForScreen();
+                }
+            }, 300);
+        });
+        
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            if (isLoading) return;
+            
+            switch (event.key) {
+                case ' ':  // Space bar
+                    arManager.placeObject();
+                    break;
+                case 'Delete':
+                case 'Backspace':
+                    arManager.removeObject();
+                    break;
+                case 'ArrowUp':
+                    arManager.increaseScale();
+                    break;
+                case 'ArrowDown':
+                    arManager.decreaseScale();
+                    break;
+                case 'r':
+                case 'R':
+                    arManager.rotateObject(45);
+                    break;
+                case 'm':
+                case 'M':
+                    arManager.nextModel();
+                    break;
+                case 'Escape':
+                    // End AR session
+                    arManager.endARSession();
+                    break;
+            }
+        });
+    }
     
     // Initialize the application
     init();
-    addRestartARButton();
 });

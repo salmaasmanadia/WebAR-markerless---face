@@ -22,11 +22,6 @@
         <button id="start-button" style="display:none">Enter AR</button>
     </div>
 
-    <!-- AR Overlay - Single instance -->
-    <div id="ar-overlay">
-        <div id="reticle-container"></div>
-    </div>
-
     <!-- Performance Stats Display -->
     <div id="performance-stats">
         <div>FPS: <span id="fps">0</span></div>
@@ -57,11 +52,6 @@
     <!-- Notification Area -->
     <div id="ar-notification"></div>
 
-    <!-- AR Mode Indicator -->
-    <div id="ar-mode-indicator">
-        <span>World-Locked AR</span>
-    </div>
-
     <!-- Help Panel -->
     <div id="help-panel">
         <h3>How to Use This AR Experience</h3>
@@ -81,13 +71,17 @@
         <div>Scale: <span id="current-scale">1.0</span>x</div>
     </div>
 
+    <!-- DOM overlay for AR session -->
+    <div id="ar-overlay">
+        <div id="reticle-container">
+            <div id="reticle"></div>
+        </div>
+    </div>
+
     <!-- Custom Scripts -->
     <script src="js/html-components.js"></script>
     <script src="js/performance-tracker.js"></script>
     <script src="js/ar-manager.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/ui-visibility.js"></script>
-    <script src="js/ios-ar-adapter.js"></script>
-    <script src="js/AR-camera.js"></script>
 </body>
 </html>

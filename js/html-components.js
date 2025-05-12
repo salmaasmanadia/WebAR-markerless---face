@@ -220,87 +220,38 @@ class UIManager {
         }
     }
     
-  /**
- * Toggle UI visibility
- */
-toggleUIVisibility() {
-    const controlPanel = document.getElementById('control-panel');
-    if (controlPanel) {
-        const isVisible = controlPanel.style.opacity !== '0';
-        this.setUIVisibility(!isVisible);
-    }
-}
-
-/**
- * Update UI visibility
- * @param {boolean} visible - Whether UI should be visible
- */
-setUIVisibility(visible) {
-    const elements = [
-        'control-panel',
-        'size-controls',
-        'performance-stats',
-        'model-info',
-        'instructions'
-    ];
-    
-    elements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            // Always preserve display property in AR mode
-            if (this.state.isARActive && visible) {
-                element.style.display = id === 'control-panel' || id === 'size-controls' ? 'flex' : 'block';
+    /**
+     * Update UI visibility
+     * @param {boolean} visible - Whether UI should be visible
+     */
+    setUIVisibility(visible) {
+        const elements = [
+            'control-panel',
+            'size-controls',
+            'performance-stats',
+            'model-info',
+            'instructions'
+        ];
+        
+        elements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.opacity = visible ? '1' : '0';
+                element.style.pointerEvents = visible ? 'auto' : 'none';
             }
-            
-            element.style.opacity = visible ? '1' : '0';
-            element.style.pointerEvents = visible ? 'auto' : 'none';
-        }
-    });
-}
-
-/**
- * Add event handlers to ensure UI stays visible in AR mode
- */
-_setupARModeHandlers() {
-    // Create special touch event to toggle UI visibility
-    document.addEventListener('touchstart', (event) => {
-        if (this.state.isARActive && event.touches.length === 3) {
-            // Three-finger touch to toggle UI
-            this.toggleUIVisibility();
-            event.preventDefault();
-        }
-    });
-    
-    // Restoration timer to ensure controls stay visible
-    setInterval(() => {
-        if (this.state.isARActive) {
-            const controlPanel = document.getElementById('control-panel');
-            if (controlPanel && controlPanel.style.opacity === '0') {
-                this.setUIVisibility(true);
-            }
-        }
-    }, 5000);
-}
-
-/**
- * Initialize UI components
- */
-init() {
-    this._hideHelpPanel();
-    this._setupARModeIndicator();
-    this._setupARModeHandlers();
-    
-    // Show help panel on first run
-    if (!localStorage.getItem('ar-help-shown')) {
-        this.showHelpPanel();
-        localStorage.setItem('ar-help-shown', 'true');
+        });
     }
     
-    // Adjust UI for current screen
-    this._adjustUIForScreen();
+    /**
+     * Toggle UI visibility
+     */
+    toggleUIVisibility() {
+        const controlPanel = document.getElementById('control-panel');
+        if (controlPanel) {
+            const isVisible = controlPanel.style.opacity !== '0';
+            this.setUIVisibility(!isVisible);
+        }
     }
-
-    
 }
 
 // Export the UI Manager

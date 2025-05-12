@@ -196,170 +196,115 @@ class ARManager {
         }
     }
 
-/**
- * Update AR session state
- * @param {boolean} active - Whether AR session is active
- */
-updateARSessionState(active) {
-    this.state.isARActive = active;
-    
-    // Update UI based on AR state
-    const controlPanel = document.getElementById('control-panel');
-    const sizeControls = document.getElementById('size-controls');
-    const modeIndicator = document.getElementById('ar-mode-indicator');
-    
-    if (controlPanel && sizeControls) {
-        if (active) {
-            controlPanel.classList.add('ar-active');
-            sizeControls.classList.add('ar-active');
-            if (modeIndicator) modeIndicator.style.opacity = '1';
-            
-            // Ensure controls are visible when AR is active
-            controlPanel.style.display = 'flex';
-            controlPanel.style.opacity = '1';
-            controlPanel.style.pointerEvents = 'auto';
-            
-            sizeControls.style.display = 'flex';
-            sizeControls.style.opacity = '1';
-            sizeControls.style.pointerEvents = 'auto';
-            
-            // Force other controls to be visible
-            const modelInfo = document.getElementById('model-info');
-            if (modelInfo) {
-                modelInfo.style.display = 'block';
-                modelInfo.style.opacity = '1';
-            }
-            
-            const perfStats = document.getElementById('performance-stats');
-            if (perfStats) {
-                perfStats.style.display = 'block';
-                perfStats.style.opacity = '1';
-            }
-        } else {
-            controlPanel.classList.remove('ar-active');
-            sizeControls.classList.remove('ar-active');
-            if (modeIndicator) modeIndicator.style.opacity = '0';
-        }
-    }
-}
-
-/**
- * Start WebXR AR session
- */
-async startARSession() {
-    if (!this.state.isInitialized || !this.state.isArSupported) {
-        this.options.showNotification('AR not supported or not initialized', 3000);
-        return;
-    }
-
-    try {
-        // Check if session is already running
-        if (this.state.xrSession) {
-            console.log('AR session already running');
+    /**
+     * Start WebXR AR session
+     */
+    async startARSession() {
+        if (!this.state.isInitialized || !this.state.isArSupported) {
+            this.options.showNotification('AR not supported or not initialized', 3000);
             return;
         }
 
-        // Define required features
-        const requiredFeatures = ['local', 'hit-test'];
-        const optionalFeatures = ['dom-overlay'];
-        const sessionInit = { requiredFeatures, optionalFeatures };
+        try {
+            // Check if session is already running
+            if (this.state.xrSession) {
+                console.log('AR session already running');
+                return;
+            }
 
-        // Add DOM overlay if available
-        const arOverlay = document.getElementById('ar-overlay');
-        if (arOverlay) {
-            sessionInit.domOverlay = { root: arOverlay };
-            arOverlay.style.display = 'block';
+            // Define required features
+            const requiredFeatures = ['local', 'hit-test'];
+            const optionalFeatures = ['dom-overlay'];
+            const sessionInit = { requiredFeatures, optionalFeatures };
+
+            // Add DOM overlay if available
+            const arOverlay = document.getElementById('ar-overlay');
+            if (arOverlay) {
+                sessionInit.domOverlay = { root: arOverlay };
+                arOverlay.style.display = 'block';
+            }
+
+            // Ensure UI controls are visible before entering AR
+            this._showUIControls();
+
+            // Request the session
+            const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
+            this.state.xrSession = session;
+
+            // Setup session
+            this.state.renderer.xr.setReferenceSpaceType('local');
+            await this.state.renderer.xr.setSession(session);
+
+            // Set up reference space and hit testing
+            this.state.xrReferenceSpace = await session.requestReferenceSpace('local');
+            const viewerReferenceSpace = await session.requestReferenceSpace('viewer');
+            
+            // Create hit test source
+            this.state.xrHitTestSource = await session.requestHitTestSource({
+                space: viewerReferenceSpace
+            });
+
+            // Add event listeners
+            session.addEventListener('end', this._onSessionEnded);
+            
+            // Set up controller for interactions
+            this.state.controller = this.state.renderer.xr.getController(0);
+            this.state.controller.addEventListener('select', this._onSelect);
+            this.state.scene.add(this.state.controller);
+
+            // Start rendering
+            this.state.renderer.setAnimationLoop(this._render);
+            this.options.showNotification('AR session started', 2000);
+        } catch (error) {
+            console.error('Error starting AR session:', error);
+            this.options.showNotification(`AR Error: ${error.message}`, 3000);
+        }
+    }
+
+    /**
+     * Show UI controls for AR mode
+     * @private
+     */
+    _showUIControls() {
+        // Show control panel
+        const controlPanel = document.getElementById('control-panel');
+        if (controlPanel) {
+            controlPanel.style.display = 'flex';
+            controlPanel.style.zIndex = '1000';
+            // Make sure pointer events work
+            controlPanel.style.pointerEvents = 'auto';
         }
 
-        // Ensure UI controls are visible before entering AR
-        this._showUIControls();
+        // Show size controls
+        const sizeControls = document.getElementById('size-controls');
+        if (sizeControls) {
+            sizeControls.style.display = 'flex';
+            sizeControls.style.zIndex = '1000';
+            // Make sure pointer events work
+            sizeControls.style.pointerEvents = 'auto';
+        }
 
-        // Request the session
-        const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
-        this.state.xrSession = session;
+        // Show model info
+        const modelInfo = document.getElementById('model-info');
+        if (modelInfo) {
+            modelInfo.style.display = 'block';
+            modelInfo.style.zIndex = '1000';
+        }
 
-        // Setup session
-        this.state.renderer.xr.setReferenceSpaceType('local');
-        await this.state.renderer.xr.setSession(session);
+        // Make sure the instructions are visible
+        const instructions = document.getElementById('instructions');
+        if (instructions) {
+            instructions.style.display = 'block';
+            instructions.style.zIndex = '1000';
+        }
 
-        // Set up reference space and hit testing
-        this.state.xrReferenceSpace = await session.requestReferenceSpace('local');
-        const viewerReferenceSpace = await session.requestReferenceSpace('viewer');
-        
-        // Create hit test source
-        this.state.xrHitTestSource = await session.requestHitTestSource({
-            space: viewerReferenceSpace
-        });
-
-        // Add event listeners
-        session.addEventListener('end', this._onSessionEnded);
-        
-        // Set up controller for interactions
-        this.state.controller = this.state.renderer.xr.getController(0);
-        this.state.controller.addEventListener('select', this._onSelect);
-        this.state.scene.add(this.state.controller);
-        
-        // Update AR session state 
-        this.updateARSessionState(true);
-
-        // Start rendering
-        this.state.renderer.setAnimationLoop(this._render);
-        this.options.showNotification('AR session started', 2000);
-    } catch (error) {
-        console.error('Error starting AR session:', error);
-        this.options.showNotification(`AR Error: ${error.message}`, 3000);
+        // Show performance stats
+        const perfStats = document.getElementById('performance-stats');
+        if (perfStats) {
+            perfStats.style.display = 'block';
+            perfStats.style.zIndex = '1000';
+        }
     }
-}
-
-/**
- * Show UI controls for AR mode
- * @private
- */
-_showUIControls() {
-    // Show control panel
-    const controlPanel = document.getElementById('control-panel');
-    if (controlPanel) {
-        controlPanel.style.display = 'flex';
-        controlPanel.style.zIndex = '1000';
-        // Make sure pointer events work
-        controlPanel.style.pointerEvents = 'auto';
-        controlPanel.style.opacity = '1';
-    }
-
-    // Show size controls
-    const sizeControls = document.getElementById('size-controls');
-    if (sizeControls) {
-        sizeControls.style.display = 'flex';
-        sizeControls.style.zIndex = '1000';
-        // Make sure pointer events work
-        sizeControls.style.pointerEvents = 'auto';
-        sizeControls.style.opacity = '1';
-    }
-
-    // Show model info
-    const modelInfo = document.getElementById('model-info');
-    if (modelInfo) {
-        modelInfo.style.display = 'block';
-        modelInfo.style.zIndex = '1000';
-        modelInfo.style.opacity = '1';
-    }
-
-    // Make sure the instructions are visible
-    const instructions = document.getElementById('instructions');
-    if (instructions) {
-        instructions.style.display = 'block';
-        instructions.style.zIndex = '1000';
-        instructions.style.opacity = '1';
-    }
-
-    // Show performance stats
-    const perfStats = document.getElementById('performance-stats');
-    if (perfStats) {
-        perfStats.style.display = 'block';
-        perfStats.style.zIndex = '1000';
-        perfStats.style.opacity = '1';
-    }
-}
 
     /**
      * End WebXR AR session
