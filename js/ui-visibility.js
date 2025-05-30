@@ -1,248 +1,178 @@
 // Wait for DOM to load
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize WebXR polyfill
+    // Initialize WebXR polyfill (jika ada dan digunakan)
     if (typeof WebXRPolyfill !== 'undefined') {
-        const polyfill = new WebXRPolyfill({
+        new WebXRPolyfill({
             optionalFeatures: ['dom-overlay', 'hit-test'],
-            forcePolyfill: true
+            forcePolyfill: true // Sesuaikan jika perlu
         });
-        console.log('WebXR Polyfill initialized');
+        console.log('WebXR Polyfill initialized (jika ada)');
     } else {
-        console.warn('WebXR Polyfill not found');
+        console.warn('WebXR Polyfill not found (info)');
     }
 
-    // Hide loading indicator once everything is ready
-    const hideLoading = () => {
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.opacity = '0';
+    // Fungsi notifikasi ini bisa dipertimbangkan untuk dihapus jika UIManager.showNotification sudah cukup
+    // Untuk saat ini, biarkan jika ada bagian lain yang mungkin masih menggunakannya secara internal.
+    // Pastikan tidak konflik dengan notifikasi UIManager.
+    if (!window.showNotification) {
+        window.showNotification = (message, duration = 3000) => {
+            let notification = document.getElementById('ar-notification'); // Menggunakan ID yang sama dengan UIManager
+            if (!notification) {
+                console.warn('Elemen notifikasi #ar-notification tidak ditemukan oleh ui-visibility.js');
+                return;
+            }
+            notification.textContent = message;
+            notification.style.opacity = '1';
             setTimeout(() => {
-                loadingIndicator.style.display = 'none';
-            }, 500);
+                notification.style.opacity = '0';
+            }, duration);
+        };
+    }
+
+
+    /**
+     * Memastikan elemen DOM Overlay dan UI Container ada dan terstruktur dengan benar.
+     * Menggunakan elemen yang sudah ada dari HTML jika tersedia.
+     */
+    function ensureDOMOverlayStructure() {
+        let overlayElement = document.getElementById('ar-dom-overlay');
+        if (!overlayElement) {
+            console.warn('#ar-dom-overlay tidak ditemukan, membuatnya...');
+            overlayElement = document.createElement('div');
+            overlayElement.id = 'ar-dom-overlay';
+            // Style dasar jika dibuat dinamis, idealnya styling via CSS
+            Object.assign(overlayElement.style, {
+                width: '100%', height: '100%', position: 'absolute',
+                top: '0', left: '0', pointerEvents: 'none', zIndex: '10' // zIndex disesuaikan
+            });
+            document.body.appendChild(overlayElement);
         }
+
+        let uiContainer = document.getElementById('ar-ui-container');
+        if (!uiContainer) {
+            console.warn('#ar-ui-container tidak ditemukan di dalam #ar-dom-overlay, membuatnya...');
+            uiContainer = document.createElement('div');
+            uiContainer.id = 'ar-ui-container';
+            // Style dasar jika dibuat dinamis
+            Object.assign(uiContainer.style, {
+                position: 'absolute', width: '100%', height: '100%',
+                pointerEvents: 'none' // Elemen anak akan mengatur pointerEvents mereka sendiri
+            });
+            overlayElement.appendChild(uiContainer); // Pastikan uiContainer ada di dalam overlayElement
+        } else if (uiContainer.parentElement !== overlayElement) {
+            // Jika uiContainer ada tapi tidak di dalam overlayElement yang benar, pindahkan.
+            console.warn('#ar-ui-container ada tapi bukan anak dari #ar-dom-overlay. Memindahkan...');
+            overlayElement.appendChild(uiContainer);
+        }
+        return { overlayElement, uiContainer };
+    }
+
+    // Panggil sekali untuk memastikan struktur DOM overlay benar saat startup
+    const { uiContainer } = ensureDOMOverlayStructure();
+
+    /**
+     * (OPSIONAL, jika masih diperlukan)
+     * Memindahkan elemen UI yang relevan ke dalam UI Container di DOM Overlay.
+     * Fungsi ini sebaiknya dipanggil secara eksplisit oleh app.js jika memang diperlukan,
+     * bukan secara otomatis melalui patching.
+     */
+    window.moveElementsToARUIContainer = function() {
+        if (!uiContainer) {
+            console.error('ar-ui-container tidak siap untuk memindahkan elemen.');
+            return;
+        }
+
+        const elementsToMove = [
+            'control-panel', 'size-controls', 'model-info',
+            'performance-stats', 'ar-mode-indicator', 'instructions',
+            'help-btn', // Jika ada tombol ini
+            'exit-ar-btn' // Jika ada tombol ini
+            // 'reticle-container' // Reticle biasanya dikelola Three.js, bukan dipindah
+        ];
+
+        console.log('Memindahkan elemen ke ar-ui-container (jika diperlukan)...');
+        elementsToMove.forEach(id => {
+            const element = document.getElementById(id);
+            if (element && element.parentElement !== uiContainer) {
+                // Simpan parent asli untuk jaga-jaga jika perlu restore (meskipun restore sebaiknya ditangani app.js)
+                if (!element.dataset.originalParentId) {
+                    element.dataset.originalParentId = element.parentElement ? element.parentElement.id || 'body' : 'body';
+                }
+                uiContainer.appendChild(element);
+                console.log(`Elemen ${id} dipindahkan ke ar-ui-container.`);
+                // Pastikan elemen tetap interaktif setelah dipindahkan
+                element.style.pointerEvents = 'auto';
+            }
+        });
     };
 
-    // Check AR support
-    const checkARSupport = async () => {
-        if (navigator.xr) {
+    /**
+     * (OPSIONAL, jika masih diperlukan)
+     * Mengembalikan elemen UI ke parent aslinya.
+     * Fungsi ini sebaiknya dipanggil secara eksplisit oleh app.js jika memang diperlukan.
+     */
+    window.restoreElementsFromARUIContainer = function() {
+        console.log('Mengembalikan elemen dari ar-ui-container ke parent asli (jika diperlukan)...');
+        const elementsToRestore = uiContainer ? Array.from(uiContainer.children) : [];
+
+        elementsToRestore.forEach(element => {
+            const originalParentId = element.dataset.originalParentId;
+            if (originalParentId) {
+                const originalParent = (originalParentId === 'body') ? document.body : document.getElementById(originalParentId);
+                if (originalParent) {
+                    originalParent.appendChild(element);
+                    console.log(`Elemen ${element.id || 'tanpa-id'} dikembalikan ke ${originalParentId}.`);
+                } else {
+                    document.body.appendChild(element); // Fallback ke body
+                    console.warn(`Parent asli ${originalParentId} untuk elemen ${element.id} tidak ditemukan. Dikembalikan ke body.`);
+                }
+            }
+        });
+    };
+
+
+    // PATCHING PADA ARManager dan UIManager DIHILANGKAN/DISEDERHANAKAN
+    // Logika untuk menampilkan/menyembunyikan UI saat sesi AR dimulai/berakhir
+    // sebaiknya ditangani oleh app.js dan UIManager.
+
+    // Fungsi extendARManagerWithBabylonDOMOverlay tidak lagi melakukan patching otomatis.
+    // Metode configureDOMOverlay bisa tetap ada jika berguna sebagai utilitas manual.
+    if (window.ARManager && !ARManager.prototype.configureDOMOverlay) {
+        ARManager.prototype.configureDOMOverlay = function(options = {}) {
+            if (!this.scene || !this.xrHelper) { // xrHelper mungkin spesifik Babylon.js
+                console.warn('Tidak dapat mengkonfigurasi DOM overlay: scene atau XR helper tidak terinisialisasi (mungkin pesan dari konteks Babylon.js)');
+                return;
+            }
+            const root = options.root || document.getElementById('ar-dom-overlay');
+            if (!root) {
+                console.warn('Elemen root DOM overlay tidak ditemukan.');
+                return;
+            }
             try {
-                const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
-                console.log('WebXR AR support (native):', isSupported);
-                return isSupported;
+                if (this.xrHelper && this.xrHelper.sessionManager) {
+                    this.xrHelper.sessionManager.setSessionOptions({ domOverlay: { root } });
+                    console.log('DOM overlay dikonfigurasi dengan elemen root:', root.id);
+                } else if (this.state && this.state.renderer && this.state.renderer.xr) {
+                    // Untuk Three.js, konfigurasi domOverlay terjadi saat requestSession
+                    // Metode ini mungkin lebih relevan untuk Babylon
+                    console.log('Untuk Three.js, DOM Overlay dikonfigurasi saat requestSession. Metode ini mungkin tidak banyak berpengaruh setelah sesi dimulai.');
+                }
             } catch (err) {
-                console.log('Error checking WebXR support:', err);
-                return false;
+                console.error('Error mengkonfigurasi DOM overlay:', err);
             }
-        } else {
-            console.log('WebXR not available on this browser');
-            return false;
-        }
-    };
-
-    // Show notification function
-    window.showNotification = (message, duration = 3000) => {
-        let notification = document.getElementById('ar-notification');
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.id = 'ar-notification';
-            Object.assign(notification.style, {
-                position: 'fixed',
-                bottom: '100px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: '10px 20px',
-                borderRadius: '5px',
-                zIndex: '9999',
-                opacity: '0',
-                transition: 'opacity 0.3s ease'
-            });
-            document.body.appendChild(notification);
-        }
-        notification.textContent = message;
-        notification.style.opacity = '1';
-        setTimeout(() => {
-            notification.style.opacity = '0';
-        }, duration);
-    };
-
-    // Initialize everything
-    const initApp = async () => {
-        try {
-            if (typeof detectARCapabilities === 'function') {
-                const capabilities = detectARCapabilities();
-                console.log('Device capabilities:', capabilities);
-            } else {
-                console.warn('detectARCapabilities function not found');
-            }
-
-            if (typeof getARManager === 'function') {
-                window.arManager = getARManager({
-                    modelPath: 'models/dog.glb',
-                    models: [
-                        { name: '3D Model', type: 'gltf', path: 'models/dog.glb' },
-                        { name: 'Box', type: 'primitive', primitive: 'box' },
-                        { name: 'Sphere', type: 'primitive', primitive: 'sphere' },
-                        { name: 'Cylinder', type: 'primitive', primitive: 'cylinder' }
-                    ],
-                    currentModelIndex: 0,
-                    defaultScale: 1.0,
-                    showNotification: window.showNotification
-                });
-
-                await window.arManager.init();
-            } else {
-                console.warn('getARManager function not found');
-            }
-        } catch (err) {
-            console.error('Error initializing app:', err);
-            window.showNotification('Error initializing app: ' + err.message);
-        } finally {
-            hideLoading();
-        }
-    };
-
-    // Initialize the app
-    if (document.readyState === 'complete') {
-        initApp();
-    } else {
-        window.addEventListener('load', initApp);
+        };
+        console.log('Metode ARManager.prototype.configureDOMOverlay ditambahkan (jika belum ada).');
     }
+
+
+    // Hapus interval yang memaksa visibilitas UI
+    // Hapus three-finger touch gesture untuk toggle UI (bisa dibuatkan tombol khusus jika perlu)
+
+    console.log('ui-visibility.js telah disederhanakan untuk mengurangi tumpang tindih.');
+    // Jika pemindahan elemen ke ar-ui-container memang mutlak diperlukan untuk DOM Overlay WebXR,
+    // pertimbangkan untuk memanggil window.moveElementsToARUIContainer() sekali dari app.js
+    // setelah ARManager.startARSession() berhasil dan sebelum render loop dimulai,
+    // dan window.restoreElementsFromARUIContainer() saat sesi AR berakhir.
+    // Namun, idealnya, CSS dan struktur HTML sudah menangani penempatan elemen dengan benar.
+
 });
-
-
-// ===== UI Visibility Patch Integration =====
-(function() {
-    document.addEventListener('DOMContentLoaded', function() {
-        // Make sure we don't double-initialize
-        if (window.uiVisibilityInitialized) return;
-        window.uiVisibilityInitialized = true;
-        
-        console.log('Initializing UI visibility module');
-        const isInAR = document.querySelector('.ar-active') !== null;
-
-        function forceUIVisibility() {
-            const elementsToShow = [
-                'control-panel',
-                'size-controls',
-                'model-info',
-                'performance-stats',
-                'ar-mode-indicator',
-                'instructions',
-                'help-btn',
-                'exit-ar-btn'
-            ];
-
-            elementsToShow.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.style.display = id.includes('controls') ? 'flex' : 'block';
-                    element.style.opacity = '1';
-                    element.style.pointerEvents = 'auto';
-                    element.style.zIndex = '2000';
-                }
-            });
-        }
-
-        function fixARUIVisibility() {
-            forceUIVisibility();
-            const visibilityInterval = setInterval(forceUIVisibility, 1000);
-            window.arUIVisibilityInterval = visibilityInterval;
-
-            document.addEventListener('touchstart', function(event) {
-                if (event.touches.length === 3) {
-                    const controlPanel = document.getElementById('control-panel');
-                    const isVisible = controlPanel?.style.opacity !== '0';
-
-                    const elementsToShow = [
-                        'control-panel',
-                        'size-controls',
-                        'model-info',
-                        'performance-stats',
-                        'ar-mode-indicator',
-                        'instructions',
-                        'help-btn',
-                        'exit-ar-btn'
-                    ];
-
-                    elementsToShow.forEach(id => {
-                        const element = document.getElementById(id);
-                        if (element) {
-                            element.style.opacity = isVisible ? '0' : '1';
-                            element.style.pointerEvents = isVisible ? 'none' : 'auto';
-                        }
-                    });
-
-                    event.preventDefault();
-                }
-            });
-        }
-
-        // Check for ARManager and patch it if available
-        if (window.ARManager) {
-            console.log('Patching ARManager prototype');
-            const originalStartARSession = ARManager.prototype.startARSession;
-            ARManager.prototype.startARSession = async function() {
-                const result = await originalStartARSession.apply(this, arguments);
-                setTimeout(fixARUIVisibility, 500);
-                return result;
-            };
-
-            const originalEndSession = ARManager.prototype.endARSession;
-            ARManager.prototype.endARSession = function() {
-                if (window.arUIVisibilityInterval) {
-                    clearInterval(window.arUIVisibilityInterval);
-                    window.arUIVisibilityInterval = null;
-                }
-                return originalEndSession.apply(this, arguments);
-            };
-        }
-
-        // Check for UIManager and patch it if available
-        function patchUIManager() {
-            // Access UIManager from window instead of directly
-            if (window.UIManager && !window.UIManager.prototype._patched) {
-                console.log('Patching UIManager prototype');
-                
-                const UIManagerProto = window.UIManager.prototype;
-                const originalUpdateARSessionState = UIManagerProto.updateARSessionState;
-                
-                UIManagerProto.updateARSessionState = function(active) {
-                    originalUpdateARSessionState.apply(this, arguments);
-                    if (active) {
-                        setTimeout(fixARUIVisibility, 500);
-                    }
-                };
-                
-                UIManagerProto._patched = true;
-            }
-        }
-
-        // Try to patch UIManager now or wait for it to be defined
-        if (window.UIManager) {
-            patchUIManager();
-        } else {
-            console.log('UIManager not found, waiting for it to be defined');
-            
-            // Check every 300ms for UIManager
-            const checkInterval = setInterval(() => {
-                if (window.UIManager) {
-                    clearInterval(checkInterval);
-                    patchUIManager();
-                    console.log('UIManager found and patched');
-                }
-            }, 300);
-            
-            // Stop checking after 10 seconds
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                console.warn('UIManager not found after timeout');
-            }, 10000);
-        }
-
-        if (isInAR) {
-            fixARUIVisibility();
-        }
-    });
-})();
