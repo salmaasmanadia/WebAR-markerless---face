@@ -108,271 +108,434 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * Properly end an AR session
-     */
-    function exitARMode() {
-       isARModeActive = false; // Set status mode AR
+/**
+ * Properly end an AR session and restore Enter AR button
+ */
+function exitARMode() {
+    console.log('Exiting AR mode...');
+    isARModeActive = false; // Set status mode AR ke false
 
     if (arManager && arManager.state && arManager.state.xrSession) {
         console.log('Ending AR session and stopping performance tracking...');
         const session = arManager.state.xrSession;
 
+        // Stop performance tracking
         if (performanceTracker) {
-            performanceTracker.stop(); // PANGGIL STOP DI SINI
+            performanceTracker.stop();
             performanceTracker.reportToServer();
             console.log("Performance tracking stopped and data reported for AR session.");
         }
 
+        // End XR session properly
         session.end().then(() => {
             console.log('AR session ended successfully');
-            // ... (sisa logika reset UI Anda) ...
-            resetUICompletely(); // Pastikan UI di-reset
+            
+            // Reset AR Manager state
+            if (arManager) {
+                arManager.state.xrSession = null;
+                arManager.state.xrHitTestSource = null;
+                arManager.state.renderer.setAnimationLoop(null);
+            }
+            
+            // Reset UI completely and show Enter AR button
+            resetUIAfterARExit();
+            
+            // Notify UI manager of session end
             if (uiManager) {
                 uiManager.updateARSessionState(false);
+                uiManager.showNotification('AR session ended. You can start AR again!', 3000);
             }
-            const exitButtonElement = document.getElementById('exit-ar'); // Jika ada tombol exit fisik
-            if(exitButtonElement) exitButtonElement.style.display = 'none';
-            if(startButton) startButton.style.display = 'block';
-
-
+            
         }).catch(err => {
             console.error('Error ending AR session:', err);
-            resetUICompletely(); // Tetap coba reset UI jika ada error
+            // Even if there's an error, still reset the UI
+            resetUIAfterARExit();
         });
     } else {
         console.warn('No active AR session to end.');
-        // Jika tracker mungkin masih berjalan karena kondisi tak terduga
+        // If tracker might still be running due to unexpected conditions
         if (performanceTracker && performanceTracker.reportingInterval) {
             performanceTracker.stop();
             performanceTracker.reportToServer();
             console.log("Performance tracking stopped (no active AR session but was running).");
         }
-        resetUICompletely();
-        const exitButtonElement = document.getElementById('exit-ar'); // Jika ada tombol exit fisik
-        if(exitButtonElement) exitButtonElement.style.display = 'none';
-        if(startButton) startButton.style.display = 'block';
-    } // Ensure we have a valid session to end
-        if (arManager && arManager.state && arManager.state.xrSession) {
-            console.log('Ending AR session properly...');
+        resetUIAfterARExit();
+    }
+}
+
+/**
+ * Reset UI specifically after exiting AR mode
+ */
+function resetUIAfterARExit() {
+    console.log('Resetting UI after AR exit...');
+    
+    // Remove AR mode class from body
+    document.body.classList.remove('ar-mode');
+    document.body.classList.add('normal-mode');
+    
+    // Show Start AR button and hide Exit AR button
+    const startButton = document.getElementById('start-ar');
+    const exitButton = document.getElementById('exit-ar');
+    
+    if (startButton) {
+        startButton.style.display = 'block';
+        startButton.style.visibility = 'visible';
+        startButton.style.opacity = '1';
+        startButton.disabled = false;
+        console.log('Start AR button restored');
+    }
+    
+    if (exitButton) {
+        exitButton.style.display = 'none';
+    }
+    
+    // Hide loading screen if it's still visible
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+        loadingScreen.style.opacity = '0';
+    }
+    
+    // Reset AR message to ready state
+    const arMessage = document.getElementById('ar-message');
+    if (arMessage) {
+        arMessage.textContent = 'AR is ready! Click Enter AR to begin.';
+        arMessage.style.color = '#4CAF50'; // Green color for ready state
+    }
+    
+    // Reset control panel to normal mode
+    const controlPanel = document.getElementById('control-panel');
+    if (controlPanel) {
+        controlPanel.classList.remove('ar-active');
+        controlPanel.style.display = 'flex';
+        controlPanel.style.flexDirection = 'row';
+        controlPanel.style.position = 'fixed';
+        controlPanel.style.bottom = '20px';
+        controlPanel.style.left = '50%';
+        controlPanel.style.transform = 'translateX(-50%)';
+        controlPanel.style.gap = '10px';
+        controlPanel.style.background = 'var(--bg-color)';
+        controlPanel.style.padding = '10px';
+        controlPanel.style.borderRadius = '30px';
+        controlPanel.style.opacity = '1';
+        controlPanel.style.visibility = 'visible';
+        controlPanel.style.pointerEvents = 'auto';
+        controlPanel.style.zIndex = '1000';
+    }
+    
+    // Reset size controls
+    const sizeControls = document.getElementById('size-controls');
+    if (sizeControls) {
+        sizeControls.classList.remove('ar-active');
+        sizeControls.style.display = 'flex';
+        sizeControls.style.flexDirection = 'column';
+        sizeControls.style.position = 'fixed';
+        sizeControls.style.right = '20px';
+        sizeControls.style.top = '50%';
+        sizeControls.style.transform = 'translateY(-50%)';
+        sizeControls.style.gap = '15px';
+        sizeControls.style.background = 'var(--bg-color)';
+        sizeControls.style.padding = '10px';
+        sizeControls.style.borderRadius = '20px';
+        sizeControls.style.opacity = '1';
+        sizeControls.style.visibility = 'visible';
+        sizeControls.style.pointerEvents = 'auto';
+    }
+    
+    // Hide AR overlay elements
+    const arOverlay = document.getElementById('ar-overlay');
+    if (arOverlay) {
+        arOverlay.style.display = 'none';
+    }
+    
+    // Hide performance stats or move them to a less prominent position
+    const performanceStats = document.getElementById('performance-stats');
+    if (performanceStats) {
+        performanceStats.style.opacity = '0.7'; // Make it less prominent
+        performanceStats.style.fontSize = '12px';
+    }
+    
+    // Reset any AR-specific UI elements
+    document.querySelectorAll('.ar-ui-element').forEach(el => {
+        el.classList.remove('display-force');
+        el.classList.remove('ar-active');
+        el.style.opacity = '1';
+        el.style.pointerEvents = 'auto';
+    });
+    
+    // Reset reticle container
+    const reticleContainer = document.getElementById('reticle-container');
+    if (reticleContainer) {
+        reticleContainer.style.display = 'none';
+    }
+    
+    // Clear any session references
+    xrSession = null;
+    
+    // Force a reflow to ensure styles are applied
+    document.body.offsetHeight;
+    
+    console.log('UI reset complete - Enter AR button should be visible');
+}
+
+/**
+ * Improved resetUICompletely function with Enter AR button restoration
+ */
+function resetUICompletely() {
+    console.log('Resetting UI completely...');
+    
+    // Remove any AR-specific classes from body
+    document.body.classList.remove('ar-mode');
+    document.body.classList.add('normal-mode');
+    
+    // CRITICAL: Show the Start AR button so user can enter AR again
+    const startButton = document.getElementById('start-ar');
+    const exitButton = document.getElementById('exit-ar');
+    
+    if (startButton) {
+        startButton.style.display = 'block';
+        startButton.style.visibility = 'visible';
+        startButton.style.opacity = '1';
+        startButton.disabled = false;
+        console.log('✅ Start AR button restored and enabled');
+    } else {
+        console.warn('⚠️ Start AR button not found!');
+    }
+    
+    if (exitButton) {
+        exitButton.style.display = 'none';
+    }
+    
+    // Reset AR message to ready state
+    const arMessage = document.getElementById('ar-message');
+    if (arMessage) {
+        arMessage.textContent = 'AR experience ready! Click Enter AR to begin.';
+        arMessage.style.color = '#4CAF50';
+    }
+    
+    // Elements to reset
+    const elementsToReset = [
+        'control-panel',
+        'size-controls',
+        'performance-stats',
+        'model-info',
+        'instructions',
+        'ar-overlay',
+        'reticle-container'
+    ];
+    
+    // Reset each element with appropriate styles
+    elementsToReset.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            // Remove any AR-specific classes
+            element.classList.remove('ar-active');
+            element.classList.remove('display-force');
+            element.classList.remove('post-ar-state');
+            element.classList.remove('exit-transition');
             
-            // Store the session reference before ending
-            const session = arManager.state.xrSession;
-            
-            // Mark performance metrics for session end
-            performanceTracker.reportToServer(); // Send a final report
-            
-            // End XR session properly
-            session.end().then(() => {
-                console.log('AR session ended successfully');
-                
-                // Reset AR Manager state
-                if (arManager) {
-                    arManager.state.xrSession = null;
-                    arManager.state.xrHitTestSource = null;
-                    arManager.state.renderer.setAnimationLoop(null);
-                }
-                
-                // Reset UI elements to their original state
-                document.body.classList.remove('ar-mode');
-                
-                // Reset button visibility 
-                const exitButton = document.getElementById('exit-ar');
-                const startButton = document.getElementById('start-ar');
-                
-                if (exitButton) exitButton.style.display = 'none';
-                if (startButton) startButton.style.display = 'block';
-                
-                // Force reset UI layout to original positions
-                resetUICompletely();
-                
-                // Notify UI manager of session end
-                if (uiManager) {
-                    uiManager.updateARSessionState(false);
-                }
-                
-                // Show confirmation to user
-                if (uiManager) {
-                    uiManager.showNotification('AR session ended', 2000);
-                }
-            }).catch(err => {
-                console.error('Error ending AR session:', err);
-                // Even if there's an error, still try to reset the UI
-                resetUICompletely();
-            });
-        } else {
-            console.warn('No active AR session to end');
-            resetUICompletely();
+            // Enable pointer events
+            element.style.pointerEvents = 'auto';
+            element.style.opacity = '1';
+            element.style.zIndex = '1000';
+            element.style.visibility = 'visible';
+        }
+    });
+    
+    // Reset control panel specifically
+    const controlPanel = document.getElementById('control-panel');
+    if (controlPanel) {
+        controlPanel.style.display = 'flex';
+        controlPanel.style.flexDirection = 'row';
+        controlPanel.style.position = 'fixed';
+        controlPanel.style.bottom = '20px';
+        controlPanel.style.left = '50%';
+        controlPanel.style.transform = 'translateX(-50%)';
+        controlPanel.style.gap = '10px';
+        controlPanel.style.background = 'var(--bg-color)';
+        controlPanel.style.padding = '10px';
+        controlPanel.style.borderRadius = '30px';
+    }
+    
+    // Reset size controls specifically
+    const sizeControls = document.getElementById('size-controls');
+    if (sizeControls) {
+        sizeControls.style.display = 'flex';
+        sizeControls.style.flexDirection = 'column';
+        sizeControls.style.position = 'fixed';
+        sizeControls.style.right = '20px';
+        sizeControls.style.top = '50%';
+        sizeControls.style.transform = 'translateY(-50%)';
+        sizeControls.style.gap = '15px';
+        sizeControls.style.background = 'var(--bg-color)';
+        sizeControls.style.padding = '10px';
+        sizeControls.style.borderRadius = '20px';
+    }
+    
+    // Hide AR overlay elements
+    const arOverlay = document.getElementById('ar-overlay');
+    if (arOverlay) {
+        arOverlay.style.display = 'none';
+    }
+    
+    // Hide loading screen
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+        loadingScreen.style.opacity = '0';
+    }
+    
+    // Reset any other specific styles that might be causing issues
+    document.querySelectorAll('.ar-ui-element').forEach(el => {
+        el.classList.remove('display-force');
+        el.style.opacity = '1';
+    });
+    
+    // Clear session reference
+    xrSession = null;
+    
+    // Force a reflow to ensure styles are applied
+    document.body.offsetHeight;
+    
+    console.log('✅ UI reset complete - Enter AR should be available');
+}
+
+/**
+ * Helper function to ensure Enter AR button is always available when not in AR
+ */
+function ensureEnterARAvailable() {
+    if (!isARModeActive) {
+        const startButton = document.getElementById('start-ar');
+        if (startButton) {
+            startButton.style.display = 'block';
+            startButton.style.visibility = 'visible';
+            startButton.style.opacity = '1';
+            startButton.disabled = false;
+            console.log('Enter AR button availability ensured');
         }
     }
+}
 
-    function setupPerformanceVisibilityHandler() {
+/**
+ * Enhanced visibility handler with Enter AR button check
+ */
+function setupPerformanceVisibilityHandler() {
     document.addEventListener('visibilitychange', () => {
-        if (!performanceTracker) return; // Pastikan tracker ada
+        if (!performanceTracker) return;
 
         if (document.hidden) {
-            // Selalu hentikan pelacakan jika halaman tersembunyi,
-            // tidak peduli apakah dalam mode AR atau tidak, karena tracker.stop() aman dipanggil berkali-kali.
             performanceTracker.stop();
             console.log("Performance tracking paused due to page visibility change (hidden).");
         } else {
-            // Hanya mulai lagi pelacakan jika kita memang dalam mode AR aktif
+            // Only start performance tracking if we're actually in AR mode
             if (isARModeActive) {
                 performanceTracker.start();
                 console.log("Performance tracking resumed due to page visibility change (visible in AR mode).");
+            } else {
+                // If not in AR mode, ensure Enter AR button is available
+                ensureEnterARAvailable();
             }
         }
     });
 }
 
-    /**
-     * Comprehensive UI reset function
-     */
-    function resetUICompletely() {
-        console.log('Resetting UI completely...');
-        
-        // Remove any AR-specific classes from body
-        document.body.classList.remove('ar-mode');
-        document.body.classList.add('normal-mode');
-        
-        // Elements to reset
-        const elementsToReset = [
-            'control-panel',
-            'size-controls',
-            'performance-stats',
-            'model-info',
-            'instructions',
-            'ar-overlay',
-            'reticle-container'
-        ];
-        
-        // Reset each element with appropriate styles
-        elementsToReset.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                // Remove any AR-specific classes
-                element.classList.remove('ar-active');
-                element.classList.remove('display-force');
-                element.classList.remove('post-ar-state');
-                element.classList.remove('exit-transition');
-                
-                // Enable pointer events
-                element.style.pointerEvents = 'auto';
-                element.style.opacity = '1';
-                element.style.zIndex = '1000';
-            }
-        });
-        
-        // Reset control panel specifically
-        const controlPanel = document.getElementById('control-panel');
-        if (controlPanel) {
-            controlPanel.style.display = 'flex';
-            controlPanel.style.flexDirection = 'row';
-            controlPanel.style.position = 'fixed';
-            controlPanel.style.bottom = '20px';
-            controlPanel.style.left = '50%';
-            controlPanel.style.transform = 'translateX(-50%)';
-            controlPanel.style.gap = '10px';
-            controlPanel.style.background = 'var(--bg-color)';
-            controlPanel.style.padding = '10px';
-            controlPanel.style.borderRadius = '30px';
-        }
-        
-        // Reset size controls specifically
-        const sizeControls = document.getElementById('size-controls');
-        if (sizeControls) {
-            sizeControls.style.display = 'flex';
-            sizeControls.style.flexDirection = 'column';
-            sizeControls.style.position = 'fixed';
-            sizeControls.style.right = '20px';
-            sizeControls.style.top = '50%';
-            sizeControls.style.transform = 'translateY(-50%)';
-            sizeControls.style.gap = '15px';
-            sizeControls.style.background = 'var(--bg-color)';
-            sizeControls.style.padding = '10px';
-            sizeControls.style.borderRadius = '20px';
-        }
-        
-        // Hide AR overlay elements
-        const arOverlay = document.getElementById('ar-overlay');
-        if (arOverlay) {
-            arOverlay.style.display = 'none';
-        }
-        
-        // Reset any other specific styles that might be causing issues
-        document.querySelectorAll('.ar-ui-element').forEach(el => {
-            el.classList.remove('display-force');
-            el.style.opacity = '1';
-        });
-        
-        // Force a reflow to ensure styles are applied
-        document.body.offsetHeight;
-        
-        console.log('UI reset complete');
+/**
+ * Helper function to ensure Enter AR button is always available when not in AR
+ */
+async function startExperience() {
+    console.log('Starting AR experience...');
+    
+    // Hide start button immediately to prevent double-clicking
+    if (startButton) {
+        startButton.style.display = 'none';
     }
-
-    /**
-     * Force UI refresh when needed
-     */
-    function forceRefreshUI() {
-        console.log('Forcing UI refresh...');
-        
-        // Force a browser reflow to apply all style changes
-        document.body.style.display = 'none';
-        document.body.offsetHeight; // Trigger reflow
-        document.body.style.display = '';
-        
-        // Ensure control panel is visible and correctly positioned
-        const controlPanel = document.getElementById('control-panel');
-        if (controlPanel) {
-            controlPanel.style.visibility = 'visible';
-            controlPanel.style.opacity = '1';
-        }
+    
+    // Show loading screen
+    if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+        loadingScreen.style.opacity = '1';
     }
-
-    /**
-     * Start the AR experience
-     */
-async function startExperience() { // Pastikan fungsi ini async jika startARSession() adalah async
+    
+    // Update AR message
+    if (arMessage) {
+        arMessage.textContent = 'Starting AR session...';
+        arMessage.style.color = '#2196F3'; // Blue color for loading
+    }
+    
     document.body.classList.add('ar-mode');
-    isLoading = true; // Mungkin Anda punya variabel isLoading
-
-    // Sembunyikan tombol start, tampilkan tombol exit (jika ada tombol exit fisik)
-    if(startButton) startButton.style.display = 'none';
-    const exitButtonElement = document.getElementById('exit-ar'); // Jika ada tombol exit fisik
-    if(exitButtonElement) exitButtonElement.style.display = 'block';
-
+    isLoading = true;
 
     try {
-        await arManager.startARSession(); // Tunggu sesi AR benar-benar dimulai
+        await arManager.startARSession();
         console.log('AR session started successfully.');
 
         isARModeActive = true; // Set status mode AR
-        if (performanceTracker && !document.hidden) { // Hanya mulai jika halaman tidak tersembunyi
+        
+        // Start performance tracking if page is visible
+        if (performanceTracker && !document.hidden) {
             performanceTracker.start();
             console.log("Performance tracking started for AR session.");
         }
 
+        // Show exit button if it exists
+        const exitButtonElement = document.getElementById('exit-ar');
+        if (exitButtonElement) {
+            exitButtonElement.style.display = 'block';
+        }
+
+        // Hide loading screen with animation
         if (loadingScreen) {
             loadingScreen.style.opacity = '0';
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
                 isLoading = false;
-                uiManager.showNotification('Move your device to detect surfaces, tap to place objects', 5000);
+                if (uiManager) {
+                    uiManager.showNotification('Move your device to detect surfaces, tap to place objects', 5000);
+                }
             }, 500);
         }
+        
+        // Update AR message for active state
+        if (arMessage) {
+            arMessage.textContent = 'AR session active - Press ESC to exit';
+            arMessage.style.color = '#4CAF50'; // Green for active
+        }
+        
     } catch (error) {
         console.error('Failed to start AR session:', error);
-        uiManager?.showNotification('Error starting AR: ' + error.message, 5000);
-        isARModeActive = false; // Reset status jika gagal
+        
+        // Reset everything if AR failed to start
+        isARModeActive = false;
         document.body.classList.remove('ar-mode');
-        if(startButton) startButton.style.display = 'block'; // Tampilkan lagi tombol start
-        if(exitButtonElement) exitButtonElement.style.display = 'none';
-        if (loadingScreen) { // Pastikan loading screen juga di-handle jika gagal
-            loadingScreen.style.display = 'flex'; // Atau state awal loading screen
-            const arMessageElement = document.getElementById('ar-message');
-            if(arMessageElement) arMessageElement.textContent = 'Failed to start AR. Please try again.';
+        
+        // Show start button again
+        if (startButton) {
+            startButton.style.display = 'block';
         }
+        
+        // Hide exit button
+        const exitButtonElement = document.getElementById('exit-ar');
+        if (exitButtonElement) {
+            exitButtonElement.style.display = 'none';
+        }
+        
+        // Hide loading screen
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+            loadingScreen.style.opacity = '0';
+        }
+        
+        // Update AR message with error
+        if (arMessage) {
+            arMessage.textContent = 'Failed to start AR. Please try again.';
+            arMessage.style.color = '#f44336'; // Red for error
+        }
+        
+        // Show error notification
+        if (uiManager) {
+            uiManager.showNotification('Error starting AR: ' + error.message, 5000);
+        }
+        
         isLoading = false;
     }
 }
