@@ -8,11 +8,11 @@ class ARManager {
         // Default options
         this.options = Object.assign({
             models: [
-                { name: 'Sofa', type: 'gltf', path: 'models/sofa.glb' },    // GANTI DENGAN PATH AKTUAL MODEL SOFA ANDA
-                { name: 'Sofa merah', type: 'gltf', path: 'models/sofa merah.glb' }, // GANTI DENGAN PATH AKTUAL MODEL KURSI ANDA
+                { name: 'Sofa', type: 'gltf', path: 'models/sofa.glb' },
+                { name: 'Sofa merah', type: 'gltf', path: 'models/sofa merah.glb' },
                 { name: 'Kursi Biru', type: 'gltf', path: 'models/kursi biru.glb' }
             ],
-            currentModelIndex: 0, // Model pertama yang akan aktif adalah Sofa
+            currentModelIndex: 0,
             defaultScale: 1.0,
             showNotification: this._showNotification.bind(this),
             performanceMonitoring: true,
@@ -21,7 +21,7 @@ class ARManager {
                 reportInterval: 30000,
                 reportURL: 'https://script.google.com/macros/s/AKfycbz0E7QfuE6vwJ6ljqosNuGYncA8HTJcJPzYFIYhdkJDn-CDBdxNkhWPcSCDUCZgWt7C5A/exec',
                 maxLatencySamples: 30,
-                captureSpectorFrames: 10 // Number of frames to capture with Spector.js
+                captureSpectorFrames: 10
             }
         }, options);
 
@@ -29,6 +29,7 @@ class ARManager {
         this.state = {
             isInitialized: false,
             isArSupported: false,
+            isInAR: false,
             xrSession: null,
             xrReferenceSpace: null,
             xrHitTestSource: null,
@@ -47,11 +48,8 @@ class ARManager {
                 scale: this.options.defaultScale
             },
             gltfLoader: null,
-            isDragging: false,
-            dragObject: null,
             clock: new THREE.Clock(),
             xrHitTestResults: [],
-            // Performance tracking
             performanceTracker: null,
             frameCounter: 0,
             lastRenderTime: 0,
@@ -64,77 +62,75 @@ class ARManager {
         this._onHitTest = this._onHitTest.bind(this);
         this._updateHitTest = this._updateHitTest.bind(this);
         this._render = this._render.bind(this);
+        this._renderNonAR = this._renderNonAR.bind(this);
     }
 
     /**
-     * Initialize the WebXR AR experience with performance tracking
+     * Initialize the WebXR AR experience
      */
     async init() {
         if (this.state.isInitialized) return Promise.resolve();
 
-        return new Promise(async (resolve, reject) => {
-            try {
-                // Mark start time for initialization performance
-                const initStartTime = performance.now();
+        try {
+            const initStartTime = performance.now();
 
-                // Check WebXR support
-                if (navigator.xr) {
-                    const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
-                    this.state.isArSupported = isSupported;
-                    if (!isSupported) {
-                        throw new Error('WebXR AR not supported on this device');
-                    }
-                } else {
-                    throw new Error('WebXR not supported in this browser');
+            // Check WebXR support
+            if (navigator.xr) {
+                const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+                this.state.isArSupported = isSupported;
+                if (!isSupported) {
+                    throw new Error('WebXR AR not supported on this device');
                 }
-
-                // Setup Three.js scene
-                this._setupThreeJs();
-
-                // Create the reticle
-                this._createReticle();
-
-                // Init GLTF loader
-                this.state.gltfLoader = new THREE.GLTFLoader(); //
-
-                // Setup the container for AR UI elements
-                this._setupARUI();
-
-                // Setup performance tracking if enabled
-                if (this.options.performanceMonitoring) {
-                    this._setupPerformanceTracking();
-                }
-
-                this.state.isInitialized = true;
-
-                // Calculate and log initialization time
-                const initTime = performance.now() - initStartTime;
-                console.log(`AR initialization completed in ${initTime.toFixed(2)}ms`);
-
-                if (this.state.performanceTracker) {
-                    this.state.performanceTracker.markObjectLoadStart('ar-init');
-                    this.state.performanceTracker.markObjectAppeared('ar-init');
-                }
-
-                this.options.showNotification(`AR initialized successfully (${initTime.toFixed(0)}ms)`, 2000);
-                resolve();
-            } catch (error) {
-                console.error('AR initialization error:', error);
-                this.options.showNotification(`AR Error: ${error.message}`, 3000);
-                reject(error);
+            } else {
+                throw new Error('WebXR not supported in this browser');
             }
-        });
+
+            // Setup Three.js scene
+            this._setupThreeJs();
+
+            // Create the reticle
+            this._createReticle();
+
+            // Init GLTF loader
+            this.state.gltfLoader = new THREE.GLTFLoader();
+
+            // Setup AR UI elements
+            this._setupARUI();
+
+            // Setup performance tracking if enabled
+            if (this.options.performanceMonitoring) {
+                this._setupPerformanceTracking();
+            }
+
+            this.state.isInitialized = true;
+
+            const initTime = performance.now() - initStartTime;
+            console.log(`AR initialization completed in ${initTime.toFixed(2)}ms`);
+
+            if (this.state.performanceTracker) {
+                this.state.performanceTracker.markObjectLoadStart('ar-init');
+                this.state.performanceTracker.markObjectAppeared('ar-init');
+            }
+
+            this.options.showNotification(`AR initialized successfully (${initTime.toFixed(0)}ms)`, 800);
+            
+            // Start non-AR render loop
+            this._startNonARMode();
+            
+            return Promise.resolve();
+        } catch (error) {
+            console.error('AR initialization error:', error);
+            this.options.showNotification(`AR Error: ${error.message}`, 3000);
+            throw error;
+        }
     }
 
     /**
      * Set up Performance Tracking system
-     * @private
      */
     _setupPerformanceTracking() {
         try {
-            // Check if PerformanceTracker is available globally
             if (window.PerformanceTracker) {
-                // Initialize with current device info
                 const deviceInfo = {
                     userAgent: navigator.userAgent,
                     screenWidth: window.screen.width,
@@ -144,15 +140,13 @@ class ARManager {
                     arVersion: 'WebXR'
                 };
 
-                // Create performance tracker instance with WebGL context for GPU monitoring
                 this.state.performanceTracker = new PerformanceTracker({
                     ...this.options.performanceOptions,
                     deviceInfo: deviceInfo,
                     showNotification: this.options.showNotification,
                     webGLContext: this.state.renderer ? this.state.renderer.getContext() : null
-                }); //
+                });
 
-                // Start tracking
                 this.state.performanceTracker.start();
                 console.log('Performance tracking initialized');
             } else {
@@ -165,10 +159,9 @@ class ARManager {
 
     /**
      * Set up Three.js scene and renderer
-     * @private
      */
     _setupThreeJs() {
-        // Create renderer with alpha:true to allow camera feed to show through
+        // Create renderer
         this.state.renderer = new THREE.WebGLRenderer({
             alpha: true,
             antialias: true,
@@ -177,8 +170,6 @@ class ARManager {
         this.state.renderer.setPixelRatio(window.devicePixelRatio);
         this.state.renderer.setSize(window.innerWidth, window.innerHeight);
         this.state.renderer.xr.enabled = true;
-
-        // IMPORTANT: Set the clear color to transparent with 0 alpha
         this.state.renderer.setClearColor(0x000000, 0);
 
         // Append renderer to DOM
@@ -188,17 +179,18 @@ class ARManager {
         this.state.scene = new THREE.Scene();
 
         // Add lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); //
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.state.scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); //
-        directionalLight.position.set(0, 5, 0); //
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 5, 0);
         this.state.scene.add(directionalLight);
 
-        // Create camera (will be updated by WebXR)
+        // Create camera
         this.state.camera = new THREE.PerspectiveCamera(
             70, window.innerWidth / window.innerHeight, 0.01, 1000
         );
+        this.state.camera.position.set(0, 1.6, 3);
 
         // Handle window resize
         window.addEventListener('resize', () => {
@@ -210,16 +202,14 @@ class ARManager {
 
     /**
      * Create reticle for indicating hit test surface
-     * @private
      */
     _createReticle() {
-        // Create a reticle mesh
-        const geometry = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2); //
+        const geometry = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2);
         const material = new THREE.MeshBasicMaterial({
             color: 0x44CC88,
             transparent: true,
             opacity: 0.8
-        }); //
+        });
 
         this.state.reticle = new THREE.Mesh(geometry, material);
         this.state.reticle.matrixAutoUpdate = false;
@@ -229,46 +219,65 @@ class ARManager {
 
     /**
      * Setup AR UI elements
-     * @private
      */
     _setupARUI() {
-        const arOverlay = document.getElementById('ar-overlay');
-        if (arOverlay) {
-            // Make sure it's visible but not blocking
-            arOverlay.style.display = 'block';
-            arOverlay.style.pointerEvents = 'none';
-        }
-
-        // Make sure control panel is visible in AR mode
         const controlPanel = document.getElementById('control-panel');
         if (controlPanel) {
             controlPanel.style.display = 'flex';
             controlPanel.style.zIndex = '1000';
         }
 
-        // Make sure size controls are visible in AR mode
         const sizeControls = document.getElementById('size-controls');
         if (sizeControls) {
             sizeControls.style.display = 'flex';
             sizeControls.style.zIndex = '1000';
         }
 
-        // Performance stats should be visible
         const perfStats = document.getElementById('performance-stats');
         if (perfStats) {
             perfStats.style.display = 'block';
             perfStats.style.zIndex = '1000';
         }
 
-        // Enable pointer events for control buttons but not the reticle container
-        const reticleContainer = document.getElementById('reticle-container');
-        if (reticleContainer) {
-            reticleContainer.style.pointerEvents = 'none';
+        // Show/hide AR button
+        this._updateARButton();
+    }
+
+    /**
+     * Update AR button visibility and text
+     */
+    _updateARButton() {
+        const arButton = document.getElementById('ar-button');
+        if (arButton) {
+            if (this.state.isArSupported) {
+                arButton.style.display = 'block';
+                arButton.textContent = this.state.isInAR ? 'Exit AR' : 'Enter AR';
+                arButton.onclick = () => {
+                    if (this.state.isInAR) {
+                        this.endARSession();
+                    } else {
+                        this.startARSession();
+                    }
+                };
+            } else {
+                arButton.style.display = 'none';
+            }
         }
     }
 
     /**
-     * Start WebXR AR session with performance monitoring
+     * Start non-AR mode (preview mode)
+     */
+    _startNonARMode() {
+        this.state.isInAR = false;
+        this.state.renderer.setClearColor(0x222222, 1); // Dark gray background
+        this.state.renderer.setAnimationLoop(this._renderNonAR);
+        this._updateARButton();
+        this.options.showNotification('Preview mode active', 2000);
+    }
+
+    /**
+     * Start WebXR AR session
      */
     async startARSession() {
         if (!this.state.isInitialized || !this.state.isArSupported) {
@@ -277,95 +286,74 @@ class ARManager {
         }
 
         try {
-            // Mark session start for performance tracking
             const sessionStartTime = performance.now();
 
-            // Check if session is already running
             if (this.state.xrSession) {
                 console.log('AR session already running');
                 return;
             }
 
-            // IMPORTANT: Define required features
-            const requiredFeatures = ['local', 'hit-test']; //
-            const optionalFeatures = ['dom-overlay', 'camera-access']; //
+            const requiredFeatures = ['local', 'hit-test'];
+            const optionalFeatures = ['dom-overlay', 'camera-access'];
             const sessionInit = {
                 requiredFeatures,
                 optionalFeatures,
-                // Request camera access explicitly
-                environmentIntegration: true //
+                environmentIntegration: true
             };
 
-            // Add DOM overlay if available
-            const arOverlay = document.getElementById('ar-overlay'); //
-            if (arOverlay) {
-                sessionInit.domOverlay = { root: arOverlay }; //
-                // arOverlay.style.display = 'block'; //
-            }
-
-            // Ensure UI controls are visible before entering AR
             this._showUIControls();
 
-            // Track session start in performance monitor
             if (this.state.performanceTracker) {
                 this.state.performanceTracker.markObjectLoadStart('ar-session');
             }
 
-            // Request the session
             const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
             this.state.xrSession = session;
 
-            // Setup session
             this.state.renderer.xr.setReferenceSpaceType('local');
             await this.state.renderer.xr.setSession(session);
 
-            // Set up reference space and hit testing
-            this.state.xrReferenceSpace = await session.requestReferenceSpace('local'); //
-            const viewerReferenceSpace = await session.requestReferenceSpace('viewer'); //
+            this.state.xrReferenceSpace = await session.requestReferenceSpace('local');
+            const viewerReferenceSpace = await session.requestReferenceSpace('viewer');
 
-            // Create hit test source
-            this.state.xrHitTestSource = await session.requestHitTestSource({ //
-                space: viewerReferenceSpace //
+            this.state.xrHitTestSource = await session.requestHitTestSource({
+                space: viewerReferenceSpace
             });
 
-            // Add event listeners
             session.addEventListener('end', this._onSessionEnded);
 
-            // Set up controller for interactions
             this.state.controller = this.state.renderer.xr.getController(0);
             this.state.controller.addEventListener('select', this._onSelect);
             this.state.scene.add(this.state.controller);
 
-            // Set a black background with zero opacity to ensure camera feed is visible
+            // Configure for AR mode
+            this.state.isInAR = true;
+            this.state.renderer.setClearColor(0x000000, 0);
             document.body.style.backgroundColor = 'transparent';
 
-            // Make sure the canvas is properly configured for camera feed
             const canvas = this.state.renderer.domElement;
             canvas.style.position = 'absolute';
             canvas.style.top = '0';
             canvas.style.left = '0';
             canvas.style.width = '100%';
             canvas.style.height = '100%';
-            canvas.style.zIndex = '1'; // Above background, below UI
+            canvas.style.zIndex = '1';
 
-            // Record session initialization time and mark completion
             const sessionInitTime = performance.now() - sessionStartTime;
             console.log(`AR session started in ${sessionInitTime.toFixed(2)}ms`);
 
             if (this.state.performanceTracker) {
                 this.state.performanceTracker.markObjectAppeared('ar-session');
-                // Update tracking quality to initial state
                 this.state.performanceTracker.setTrackingQuality('Initializing', 0);
             }
 
-            // Start rendering
             this.state.renderer.setAnimationLoop(this._render);
+            this._updateARButton();
             this.options.showNotification(`AR session started (${sessionInitTime.toFixed(0)}ms)`, 2000);
         } catch (error) {
             console.error('Error starting AR session:', error);
             this.options.showNotification(`AR Error: ${error.message}`, 3000);
             if (this.state.performanceTracker) {
-                // Record error in performance tracking
                 this.state.performanceTracker.setTrackingQuality('Failed', 0);
             }
         }
@@ -373,42 +361,34 @@ class ARManager {
 
     /**
      * Show UI controls for AR mode
-     * @private
      */
     _showUIControls() {
-        // Show control panel
         const controlPanel = document.getElementById('control-panel');
         if (controlPanel) {
             controlPanel.style.display = 'flex';
             controlPanel.style.zIndex = '1000';
-            // Make sure pointer events work
             controlPanel.style.pointerEvents = 'auto';
         }
 
-        // Show size controls
         const sizeControls = document.getElementById('size-controls');
         if (sizeControls) {
             sizeControls.style.display = 'flex';
             sizeControls.style.zIndex = '1000';
-            // Make sure pointer events work
             sizeControls.style.pointerEvents = 'auto';
         }
 
-        // Show model info
         const modelInfo = document.getElementById('model-info');
         if (modelInfo) {
             modelInfo.style.display = 'block';
             modelInfo.style.zIndex = '1000';
         }
 
-        // Make sure the instructions are visible
         const instructions = document.getElementById('instructions');
         if (instructions) {
             instructions.style.display = 'block';
             instructions.style.zIndex = '1000';
         }
 
-        // Show performance stats
         const perfStats = document.getElementById('performance-stats');
         if (perfStats) {
             perfStats.style.display = 'block';
@@ -422,7 +402,6 @@ class ARManager {
     endARSession() {
         if (this.state.xrSession) {
             if (this.state.performanceTracker) {
-                // Record session end event
                 this.state.performanceTracker.markObjectLoadStart('session-end');
             }
 
@@ -436,78 +415,62 @@ class ARManager {
 
     /**
      * Handle WebXR session ended
-     * @private
      */
     _onSessionEnded() {
         this.state.xrSession = null;
         this.state.xrHitTestSource = null;
-        this.state.renderer.setAnimationLoop(null);
+        this.state.isInAR = false;
+        
+        // Return to non-AR mode
+        this._startNonARMode();
+        
         this.options.showNotification('AR session ended', 2000);
 
-        // If performance tracking is enabled, report final session data
         if (this.state.performanceTracker) {
-            this.state.performanceTracker.reportToServer(); //
+            this.state.performanceTracker.reportToServer();
         }
     }
 
     /**
      * Handle select event (tap in AR view)
-     * @private
-     * @param {Event} event - Select event
      */
     _onSelect() {
         if (this.state.reticle.visible) {
-            // Get reticle position and place object there
             const position = new THREE.Vector3();
-            const rotation = new THREE.Euler();
-            const scale = new THREE.Vector3();
+            this.state.reticle.matrixWorld.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
 
-            this.state.reticle.matrixWorld.decompose(position, new THREE.Quaternion(), scale); //
-
-            // Track how long it takes to process the selection and place the object
             if (this.state.performanceTracker) {
                 this.state.performanceTracker.markObjectLoadStart('object-placement');
             }
 
-            // Place the object
             this.placeObject(position);
         }
     }
 
     /**
      * Process hit test results
-     * @private
-     * @param {XRFrame} frame - XR frame
      */
     _updateHitTest(frame) {
         if (!this.state.xrHitTestSource) return;
 
-        // Get hit test results
         const hitTestResults = frame.getHitTestResults(this.state.xrHitTestSource);
-
-        // Save for later use
         this.state.xrHitTestResults = hitTestResults;
 
         if (hitTestResults.length > 0) {
-            // Get pose from the first hit test result
             const hitPose = hitTestResults[0].getPose(this.state.xrReferenceSpace);
 
             if (hitPose) {
-                // Update reticle position to show where object will be placed
                 this.state.reticle.visible = true;
                 this.state.reticle.matrix.fromArray(hitPose.transform.matrix);
 
-                // Update tracking quality in performance monitor
                 if (this.state.performanceTracker) {
                     this.state.performanceTracker.setTrackingQuality('Good', 1.0);
                     this.state.performanceTracker.setSurfacesDetected(hitTestResults.length);
                 }
             }
         } else {
-            // Hide reticle if no surfaces detected
             this.state.reticle.visible = false;
 
-            // Update tracking quality
             if (this.state.performanceTracker) {
                 this.state.performanceTracker.setTrackingQuality('Poor', 0.2);
                 this.state.performanceTracker.setSurfacesDetected(0);
@@ -516,31 +479,24 @@ class ARManager {
     }
 
     /**
-     * WebXR render loop with performance measuring
-     * @private
-     * @param {DOMHighResTimeStamp} timestamp - Current timestamp
-     * @param {XRFrame} frame - XR frame
+     * WebXR render loop (AR mode)
      */
     _render(timestamp, frame) {
         if (!frame) return;
 
-        // Record render start time for performance metrics
         this.state.renderStartTime = performance.now();
 
-        // Update hit testing
         this._onHitTest(frame);
 
-        // Animate placed objects if needed
         const delta = this.state.clock.getDelta();
 
+        // Animate placed objects
         for (const obj of this.state.placedObjects) {
             if (obj.userData.animation) {
-                // Update animation mixer if available
                 if (obj.userData.mixer) {
                     obj.userData.mixer.update(delta);
                 }
 
-                // Apply custom rotation animations for primitives
                 if (obj.userData.rotationSpeed) {
                     obj.rotation.x += obj.userData.rotationSpeed.x;
                     obj.rotation.y += obj.userData.rotationSpeed.y;
@@ -549,105 +505,121 @@ class ARManager {
             }
         }
 
-        // Render the scene
         this.state.renderer.render(this.state.scene, this.state.camera);
 
-        // Calculate render time and track performance
         const renderTime = performance.now() - this.state.renderStartTime;
         this.state.frameCounter++;
 
-        // Track performance every frame
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markFrame();
 
-            // Update detailed render timing metrics every 10 frames
-            if (this.state.frameCounter % 10 === 0) { //
-                this.state.performanceTracker.metrics.renderTime = renderTime; //
-                this.state.performanceTracker.metrics.jsExecutionTime = renderTime - this.state.renderer.info.render.frame; //
+            if (this.state.frameCounter % 10 === 0) {
+                this.state.performanceTracker.metrics.renderTime = renderTime;
+                this.state.performanceTracker.metrics.jsExecutionTime = renderTime - this.state.renderer.info.render.frame;
+            }
+        }
+    }
+
+    /**
+     * Non-AR render loop (preview mode)
+     */
+    _renderNonAR() {
+        this.state.renderStartTime = performance.now();
+
+        const delta = this.state.clock.getDelta();
+
+        // Animate placed objects
+        for (const obj of this.state.placedObjects) {
+            if (obj.userData.animation) {
+                if (obj.userData.mixer) {
+                    obj.userData.mixer.update(delta);
+                }
+
+                if (obj.userData.rotationSpeed) {
+                    obj.rotation.x += obj.userData.rotationSpeed.x;
+                    obj.rotation.y += obj.userData.rotationSpeed.y;
+                    obj.rotation.z += obj.userData.rotationSpeed.z;
+                }
+            }
+        }
+
+        this.state.renderer.render(this.state.scene, this.state.camera);
+
+        const renderTime = performance.now() - this.state.renderStartTime;
+        this.state.frameCounter++;
+
+        if (this.state.performanceTracker) {
+            this.state.performanceTracker.markFrame();
+
+            if (this.state.frameCounter % 10 === 0) {
+                this.state.performanceTracker.metrics.renderTime = renderTime;
+                this.state.performanceTracker.metrics.jsExecutionTime = renderTime - this.state.renderer.info.render.frame;
             }
         }
     }
 
     /**
      * Handle hit test results
-     * @private
-     * @param {XRFrame} frame - XR frame
      */
     _onHitTest(frame) {
         if (!this.state.xrSession || !this.state.xrHitTestSource) return;
-
-        // Update hit test
         this._updateHitTest(frame);
     }
 
     /**
-     * Place a 3D object in the AR scene with performance tracking
-     * @param {THREE.Vector3} position - Position to place the object
+     * Place a 3D object in the scene
      */
     placeObject(position = null) {
-        const modelDef = this.options.models[this.options.currentModelIndex]; //
+        const modelDef = this.options.models[this.options.currentModelIndex];
         const objectId = `${modelDef.name}-${Date.now()}`;
 
-        // Start object placement timing
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectLoadStart(objectId);
         }
 
-        // If position not provided and we have reticle, use its position
-        if (!position && this.state.reticle && this.state.reticle.visible) {
-            position = new THREE.Vector3();
-            this.state.reticle.matrixWorld.decompose(position, new THREE.Quaternion(), new THREE.Vector3()); //
-        }
-
-        // If still no position, can't place object
+        // Default position for non-AR mode
         if (!position) {
-            this.options.showNotification('Move device to find a surface', 2000);
-            return null;
+            if (this.state.isInAR && this.state.reticle && this.state.reticle.visible) {
+                position = new THREE.Vector3();
+                this.state.reticle.matrixWorld.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+            } else {
+                // Default position in front of camera for non-AR mode
+                position = new THREE.Vector3(0, 0, -2);
+            }
         }
 
         if (modelDef.type === 'gltf') {
-            // Create GLTF model
-            this.state.gltfLoader.load(modelDef.path, (gltf) => { //
+            this.state.gltfLoader.load(modelDef.path, (gltf) => {
                 const model = gltf.scene;
 
-                // Set position
                 model.position.copy(position);
-
-                // Apply scale
                 model.scale.set(
                     this.state.currentScale,
                     this.state.currentScale,
                     this.state.currentScale
                 );
 
-                // Add to scene
                 this.state.scene.add(model);
-
-                // Track the object
                 this.state.placedObjects.push(model);
                 this.state.activeObject = model;
 
-                // Add animation if available
-                if (gltf.animations && gltf.animations.length > 0) { //
-                    const mixer = new THREE.AnimationMixer(model); //
+                if (gltf.animations && gltf.animations.length > 0) {
+                    const mixer = new THREE.AnimationMixer(model);
 
-                    // Play all animations
-                    for (let i = 0; i < gltf.animations.length; i++) { //
-                        const clip = gltf.animations[i]; //
-                        const action = mixer.clipAction(clip); //
-                        action.play(); //
+                    for (let i = 0; i < gltf.animations.length; i++) {
+                        const clip = gltf.animations[i];
+                        const action = mixer.clipAction(clip);
+                        action.play();
                     }
 
-                    model.userData.mixer = mixer; //
-                    model.userData.animation = true; //
+                    model.userData.mixer = mixer;
+                    model.userData.animation = true;
                 }
 
-                // Add metadata
                 model.userData.type = modelDef.name;
                 model.userData.scale = this.state.currentScale;
                 model.userData.id = objectId;
 
-                // Mark object placement completion in performance tracker
                 if (this.state.performanceTracker) {
                     const loadTime = this.state.performanceTracker.markObjectAppeared(objectId);
                     this.options.showNotification(`Placed ${modelDef.name} (${loadTime ? loadTime.toFixed(0) + "ms" : "N/A"})`, 2000);
@@ -656,43 +628,36 @@ class ARManager {
                 }
 
                 this._updateModelInfo();
-
                 return model;
             },
-            // Progress callback
             (progress) => {
                 const percent = Math.round((progress.loaded / progress.total) * 100);
-                if (percent % 20 === 0) { // Log at 0%, 20%, 40%, 60%, 80%, 100%
+                if (percent % 20 === 0) {
                     console.log(`Loading model: ${percent}%`);
                 }
             },
-            // Error callback
             (error) => {
                 console.error('Error loading GLTF model:', error);
                 this.options.showNotification('Failed to load 3D model', 2000);
 
-                // Mark failure in performance tracking
                 if (this.state.performanceTracker) {
                     this.state.performanceTracker.markObjectLoadStart(`${objectId}-failed`);
                     this.state.performanceTracker.markObjectAppeared(`${objectId}-failed`);
                 }
-
                 return null;
             });
         }
-        // Primitive object creation logic is removed as per user request
-        // else if (modelDef.type === 'primitive') { ... }
     }
 
     /**
-     * Increase the scale of the current or active object
+     * Increase scale of current or active object
      */
     increaseScale() {
         if (this.state.activeObject) {
             const currentScale = this.state.activeObject.userData.scale || this.state.currentScale;
-            const newScale = currentScale * 1.2; // Increase by 20%
+            const newScale = Math.min(currentScale * 1.2, 5.0);
 
-            if (newScale >= 5.0) { //
+            if (newScale >= 5.0) {
                 this.options.showNotification("Maximum scale reached", 2000);
                 return;
             }
@@ -701,11 +666,7 @@ class ARManager {
             this.state.activeObject.userData.scale = newScale;
             this.options.showNotification(`Scale: ${newScale.toFixed(2)}x`, 1000);
         } else {
-            // Update default scale for next placed object
-            this.state.currentScale *= 1.2;
-            if (this.state.currentScale >= 5.0) { //
-                this.state.currentScale = 5.0;
-            }
+            this.state.currentScale = Math.min(this.state.currentScale * 1.2, 5.0);
             this.options.showNotification(`Default scale: ${this.state.currentScale.toFixed(2)}x`, 1000);
         }
 
@@ -713,14 +674,14 @@ class ARManager {
     }
 
     /**
-     * Decrease the scale of the current or active object
+     * Decrease scale of current or active object
      */
     decreaseScale() {
         if (this.state.activeObject) {
             const currentScale = this.state.activeObject.userData.scale || this.state.currentScale;
-            const newScale = currentScale * 0.8; // Decrease by 20%
+            const newScale = Math.max(currentScale * 0.8, 0.1);
 
-            if (newScale <= 0.1) { //
+            if (newScale <= 0.1) {
                 this.options.showNotification("Minimum scale reached", 2000);
                 return;
             }
@@ -729,11 +690,7 @@ class ARManager {
             this.state.activeObject.userData.scale = newScale;
             this.options.showNotification(`Scale: ${newScale.toFixed(2)}x`, 1000);
         } else {
-            // Update default scale for next placed object
-            this.state.currentScale *= 0.8;
-            if (this.state.currentScale <= 0.1) { //
-                this.state.currentScale = 0.1;
-            }
+            this.state.currentScale = Math.max(this.state.currentScale * 0.8, 0.1);
             this.options.showNotification(`Default scale: ${this.state.currentScale.toFixed(2)}x`, 1000);
         }
 
@@ -741,11 +698,10 @@ class ARManager {
     }
 
     /**
-     * Reset the scale of the current object to default
+     * Reset scale to default
      */
     resetScale() {
         if (this.state.activeObject) {
-            // Reset to default scale
             this.state.activeObject.scale.set(
                 this.options.defaultScale,
                 this.options.defaultScale,
@@ -754,14 +710,12 @@ class ARManager {
             this.state.activeObject.userData.scale = this.options.defaultScale;
             this.options.showNotification(`Scale reset to ${this.options.defaultScale.toFixed(2)}x`, 1000);
         } else {
-            // Reset default scale for next placed object
             this.state.currentScale = this.options.defaultScale;
             this.options.showNotification(`Default scale reset to ${this.options.defaultScale.toFixed(2)}x`, 1000);
         }
 
         this._updateModelInfo();
 
-        // Track scale reset in performance metrics
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectLoadStart('scale-reset');
             this.state.performanceTracker.markObjectAppeared('scale-reset');
@@ -769,10 +723,9 @@ class ARManager {
     }
 
     /**
-     * Change the current model to next in list
+     * Change to next model
      */
     nextModel() {
-        // Track model switching performance
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectLoadStart('model-switch');
         }
@@ -783,36 +736,35 @@ class ARManager {
 
         this._updateModelInfo();
 
-        // Track completion of model switch
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectAppeared('model-switch');
         }
     }
 
     /**
-     * Remove the last placed object
+     * Remove the active object or last placed object
      */
-    removeLastObject() { // Note: in app.js, the remove button calls arManager.removeObject(), this might need to be removeLastObject() or removeObject needs to be implemented to remove the active or last.
-        // Track operation performance
+    removeObject() {
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectLoadStart('remove-object');
         }
 
-        if (this.state.placedObjects.length > 0) {
-            // Get the last object
-            const lastObject = this.state.placedObjects.pop();
+        if (this.state.activeObject) {
+            const objectToRemove = this.state.activeObject;
+            this.state.scene.remove(objectToRemove);
+            this.state.placedObjects = this.state.placedObjects.filter(obj => obj !== objectToRemove);
+            
+            this.options.showNotification(`Removed ${objectToRemove.userData.type}`, 2000);
+            this.state.activeObject = null;
 
-            // Remove from scene
-            this.state.scene.remove(lastObject);
-
-            // Clear active object if it was the one removed
-            if (this.state.activeObject === lastObject) {
-                this.state.activeObject = null;
+            if (this.state.performanceTracker) {
+                this.state.performanceTracker.updateMemoryUsage();
             }
-
+        } else if (this.state.placedObjects.length > 0) {
+            const lastObject = this.state.placedObjects.pop();
+            this.state.scene.remove(lastObject);
             this.options.showNotification(`Removed ${lastObject.userData.type}`, 2000);
 
-            // Track memory usage after object removal
             if (this.state.performanceTracker) {
                 this.state.performanceTracker.updateMemoryUsage();
             }
@@ -820,54 +772,17 @@ class ARManager {
             this.options.showNotification('No objects to remove', 2000);
         }
 
-        // Track completion of remove operation
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectAppeared('remove-object');
         }
-    }
-    
-    // Method to remove the currently active object, potentially more useful for UI button.
-    removeObject() {
-        if (this.state.performanceTracker) {
-            this.state.performanceTracker.markObjectLoadStart('remove-active-object');
-        }
 
-        if (this.state.activeObject) {
-            const objectToRemove = this.state.activeObject;
-            this.state.scene.remove(objectToRemove);
-
-            // Remove from placedObjects array
-            this.state.placedObjects = this.state.placedObjects.filter(obj => obj !== objectToRemove);
-            
-            this.options.showNotification(`Removed ${objectToRemove.userData.type}`, 2000);
-            this.state.activeObject = null; // Clear active object
-
-            if (this.state.performanceTracker) {
-                this.state.performanceTracker.updateMemoryUsage();
-                this.state.performanceTracker.markObjectAppeared('remove-active-object');
-            }
-        } else if (this.state.placedObjects.length > 0) {
-            // If no active object, remove the last one
-            this.removeLastObject();
-             if (this.state.performanceTracker) { // Ensure this also gets marked correctly if falling back to removeLastObject
-                this.state.performanceTracker.markObjectAppeared('remove-active-object'); // Or a different marker
-            }
-        }
-        else {
-            this.options.showNotification('No active object to remove', 2000);
-             if (this.state.performanceTracker) { // Ensure this path also marks completion
-                this.state.performanceTracker.markObjectAppeared('remove-active-object');
-            }
-        }
         this._updateModelInfo();
     }
-
 
     /**
      * Toggle animation for active object
      */
     toggleAnimation() {
-        // Track operation performance
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectLoadStart('toggle-animation');
         }
@@ -882,26 +797,23 @@ class ARManager {
             this.options.showNotification('No active object', 2000);
         }
 
-        // Track completion
         if (this.state.performanceTracker) {
             this.state.performanceTracker.markObjectAppeared('toggle-animation');
         }
     }
 
     /**
-     * Rotate the active object (example: by 45 degrees around Y axis)
-     * You might want to make the axis and angle configurable
+     * Rotate the active object
      */
     rotateObject(degrees = 45) {
         if (this.state.activeObject) {
             const radians = THREE.MathUtils.degToRad(degrees);
-            this.state.activeObject.rotateY(radians); // Rotate around Y axis
+            this.state.activeObject.rotateY(radians);
             this.options.showNotification(`Object rotated by ${degrees}°`, 1000);
         } else {
             this.options.showNotification('No active object to rotate', 2000);
         }
     }
-
 
     /**
      * Update displayed model info

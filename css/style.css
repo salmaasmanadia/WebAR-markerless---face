@@ -1,35 +1,41 @@
 /* ====================================================
-   AR Experience Stylesheet
-   Organization structure:
-   1. Variables
-   2. Base Elements
-   3. Loading Elements
+   AR Experience Stylesheet - Cleaned & Organized
+   Structure:
+   1. CSS Variables
+   2. Base Styles
+   3. Loading Components
    4. Control Elements
    5. UI Components
    6. AR-Specific Elements
    7. Animations
-   8. Utility Classes
-   9. Responsive Design
+   8. Responsive Design
 ==================================================== */
 
-/* ==================== 1. VARIABLES ==================== */
+/* ==================== 1. CSS VARIABLES ==================== */
 :root {
+    /* Brand Colors */
     --primary-color: #00e0a5;
     --accent-color: #00ffd2;
     --primary-light: #66ffe0;
     --primary-dark: #00b98a;
+    
+    /* Status Colors */
     --success-color: #4caf50;
     --warning-color: #ff9800;
     --danger-color: #f44336;
+    
+    /* Text & Background */
     --text-color: #ffffff;
     --text-secondary: #cccccc;
     --bg-color: rgba(20, 22, 30, 0.9);
     --bg-light: rgba(30, 34, 46, 0.8);
+    
+    /* Effects */
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     --border-radius: 10px;
 }
 
-/* ==================== 2. BASE ELEMENTS ==================== */
+/* ==================== 2. BASE STYLES ==================== */
 body {
     margin: 0;
     padding: 0;
@@ -39,7 +45,7 @@ body {
     color: var(--text-color);
 }
 
-/* ==================== 3. LOADING ELEMENTS ==================== */
+/* ==================== 3. LOADING COMPONENTS ==================== */
 #loading-screen {
     position: fixed;
     top: 0;
@@ -55,7 +61,8 @@ body {
     color: white;
 }
 
-.loader {
+.loader,
+.loading-spinner {
     border: 5px solid rgba(255, 255, 255, 0.3);
     border-top: 5px solid var(--primary-color);
     border-radius: 50%;
@@ -63,6 +70,14 @@ body {
     height: 50px;
     animation: spin 2s linear infinite;
     margin-bottom: 20px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+    animation-duration: 1s;
+    margin-bottom: 0;
 }
 
 .model-loading {
@@ -77,15 +92,6 @@ body {
     z-index: 150;
 }
 
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    border-top-color: var(--accent-color);
-    animation: spin 1s linear infinite;
-}
-
 .loading-text {
     font-size: 14px;
     color: var(--text-secondary);
@@ -93,9 +99,9 @@ body {
 
 #start-button {
     background-color: var(--primary-color);
-    color: white;
+    color: rgb(155, 28, 76);
     border: none;
-    padding: 12px 24px;
+    padding: 16px 24px;
     font-size: 16px;
     border-radius: 6px;
     cursor: pointer;
@@ -114,18 +120,29 @@ body {
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 15px;
+    gap: 20px;
+    z-index: 100;
+}
+
+#size-controls {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     z-index: 100;
 }
 
 .control-button {
-    width: 50px;
-    height: 50px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background-color: var(--bg-color);
     border: none;
     color: white;
-    font-size: 20px;
+    font-size: 28px;
     cursor: pointer;
     display: flex;
     justify-content: center;
@@ -148,18 +165,7 @@ body {
     cursor: not-allowed;
 }
 
-#size-controls {
-    position: fixed;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 100;
-}
-
-/* Expanded control panel */
+/* Expanded Controls */
 #expanded-controls {
     position: fixed;
     top: 50%;
@@ -198,6 +204,40 @@ body {
     min-width: 80px;
 }
 
+.slider-control {
+    width: 120px;
+    height: 4px;
+    -webkit-appearance: none;
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+    border-radius: 10px;
+    outline: none;
+}
+
+.slider-control::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.color-option {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.color-option.selected {
+    transform: scale(1.15);
+    border-color: white;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
 /* ==================== 5. UI COMPONENTS ==================== */
 /* Information Displays */
 #performance-stats {
@@ -212,6 +252,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 #instructions {
@@ -226,23 +269,15 @@ body {
     z-index: 80;
     text-align: center;
     max-width: 90%;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-#model-info {
-    position: fixed;
-    bottom: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--bg-color);
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-size: 14px;
-    z-index: 90;
-}
-
+/* Notifications */
 #ar-notification {
     position: fixed;
-    bottom: 80px;
+    bottom: 200px;
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.7);
@@ -260,96 +295,7 @@ body {
     opacity: 1;
 }
 
-/* Help Panel */
-#help-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: var(--bg-color);
-    padding: 25px;
-    border-radius: 12px;
-    z-index: 950;
-    width: 85%;
-    max-width: 350px;
-    box-shadow: var(--shadow);
-    display: none;
-}
-
-#help-panel h3 {
-    margin-top: 0;
-    color: var(--primary-light);
-}
-
-#help-panel ol {
-    padding-left: 20px;
-    margin-bottom: 25px;
-}
-
-#help-panel li {
-    margin-bottom: 8px;
-    color: var(--text-secondary);
-}
-
-#got-it {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: block;
-    width: 100%;
-    font-size: 16px;
-    transition: background-color 0.3s;
-}
-
-#got-it:hover {
-    background-color: var(--primary-dark);
-}
-
-/* Reticle */
-#reticle-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 80;
-}
-
-#reticle {
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--primary-color);
-    border-radius: 50%;
-    opacity: 0.8;
-    position: relative;
-}
-
-#reticle::before, #reticle::after {
-    content: '';
-    position: absolute;
-    background-color: var(--primary-color);
-}
-
-#reticle::before {
-    width: 2px;
-    height: 15px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-#reticle::after {
-    width: 15px;
-    height: 2px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-/* Object Placement */
+/* Object Placement Indicator */
 .placement-indicator {
     position: absolute;
     width: 80px;
@@ -385,13 +331,12 @@ body {
     box-shadow: 0 0 15px rgba(0, 224, 165, 0.8);
 }
 
-/* Object Selection */
+/* Object Selection & Manipulation */
 .object-selected {
     outline: 2px solid var(--primary-light);
     animation: selected-pulse 1.5s infinite;
 }
 
-/* Object Manipulation Handles */
 .object-handle {
     position: absolute;
     width: 20px;
@@ -419,35 +364,6 @@ body {
 
 .handle-translate {
     background-color: var(--warning-color);
-}
-
-/* Progress Indicators */
-.circular-progress {
-    position: relative;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: conic-gradient(var(--primary-color) calc(var(--progress, 0%) * 3.6deg), transparent 0deg);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: all 0.3s ease;
-}
-
-.circular-progress::before {
-    content: '';
-    position: absolute;
-    width: 30px;
-    height: 30px;
-    background-color: var(--bg-color);
-    border-radius: 50%;
-}
-
-.progress-value {
-    position: absolute;
-    font-size: 10px;
-    font-weight: 600;
-    color: white;
 }
 
 /* Context Menu */
@@ -566,142 +482,36 @@ body {
     border-left-color: var(--danger-color);
 }
 
-/* Tutorial Overlay */
-.tutorial-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 500;
+/* Progress Indicators */
+.circular-progress {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary-color) calc(var(--progress, 0%) * 3.6deg), transparent 0deg);
     display: flex;
     justify-content: center;
     align-items: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
-}
-
-.tutorial-overlay.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.tutorial-step {
-    background-color: var(--bg-color);
-    border-radius: var(--border-radius);
-    padding: 24px;
-    width: 90%;
-    max-width: 350px;
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
     transition: all 0.3s ease;
-    transform: scale(0.9);
 }
 
-.tutorial-overlay.visible .tutorial-step {
-    transform: scale(1);
+.circular-progress::before {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-color: var(--bg-color);
+    border-radius: 50%;
 }
 
-.tutorial-header {
-    font-size: 18px;
+.progress-value {
+    position: absolute;
+    font-size: 10px;
     font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--primary-light);
+    color: white;
 }
 
-.tutorial-content {
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 20px;
-    color: var(--text-secondary);
-}
-
-.tutorial-buttons {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.tutorial-button {
-    padding: 10px 20px;
-    background-color: var(--bg-light);
-    color: var(--text-color);
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.tutorial-button.primary {
-    background-color: var(--primary-color);
-    font-weight: 600;
-}
-
-.tutorial-button:hover {
-    background-color: var(--primary-dark);
-}
-
-.tutorial-progress {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 20px;
-}
-
-.tutorial-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.3);
-    transition: all 0.2s ease;
-}
-
-.tutorial-dot.active {
-    background-color: var(--primary-light);
-    transform: scale(1.2);
-}
-
-/* Control elements */
-.slider-control {
-    width: 120px;
-    height: 4px;
-    -webkit-appearance: none;
-    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-    border-radius: 10px;
-    outline: none;
-}
-
-.slider-control::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background: white;
-    cursor: pointer;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-}
-
-.color-option {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: all 0.2s ease;
-}
-
-.color-option.selected {
-    transform: scale(1.15);
-    border-color: white;
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-}
-
-/* Surface Detection Visualization */
+/* Surface Detection */
 .surface-marker {
     position: absolute;
     background-color: rgba(0, 224, 165, 0.2);
@@ -712,41 +522,9 @@ body {
     z-index: 40;
 }
 
-/* Tracking Status Indicator */
-.tracking-status {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    z-index: 100;
-    transition: all 0.3s ease;
-}
-
-.tracking-excellent {
-    background-color: var(--success-color);
-    box-shadow: 0 0 10px var(--success-color);
-}
-
-.tracking-good {
-    background-color: #8BC34A;
-    box-shadow: 0 0 10px #8BC34A;
-}
-
-.tracking-fair {
-    background-color: var(--warning-color);
-    box-shadow: 0 0 10px var(--warning-color);
-}
-
-.tracking-poor {
-    background-color: var(--danger-color);
-    box-shadow: 0 0 10px var(--danger-color);
-}
-
 /* ==================== 6. AR-SPECIFIC ELEMENTS ==================== */
-/* AR Mode Indicator */
-.ar-mode-indicator {
+.ar-mode-indicator,
+#ar-mode-indicator {
     position: fixed;
     top: 10px;
     left: 50%;
@@ -762,7 +540,7 @@ body {
     pointer-events: none;
 }
 
-/* AR Session Transition Effects */
+/* AR Session Transition */
 .ar-transition {
     position: fixed;
     top: 0;
@@ -780,66 +558,25 @@ body {
     opacity: 1;
 }
 
-/* AR Active UI Elements */
-#ar-mode-indicator {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+/* AR Active States */
+#control-panel.ar-active,
+#size-controls.ar-active {
     background-color: rgba(0, 0, 0, 0.7);
-    color: #4CAF50;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: bold;
+    border-radius: 30px;
+    padding: 10px;
     z-index: 2000;
-    transition: opacity 0.3s ease;
 }
 
 #control-panel.ar-active {
-    position: fixed;
     bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex !important;
-    background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 30px;
-    padding: 10px;
-    z-index: 2000;
 }
 
-#size-controls.ar-active {
-    position: fixed;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex !important;
-    flex-direction: column;
-    background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 30px;
-    padding: 10px;
-    z-index: 2000;
-}
-
-/* WebXR session active styles */
 .webxr-session-active #control-panel,
 .webxr-session-active #size-controls,
 .webxr-session-active #performance-stats,
-.webxr-session-active #model-info,
 .webxr-session-active #instructions {
     opacity: 1 !important;
     pointer-events: auto !important;
-}
-
-/* Apply backdrop filter for better visibility */
-#control-panel.ar-active,
-#size-controls.ar-active,
-#performance-stats,
-#model-info,
-#instructions,
-#help-panel {
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* ==================== 7. ANIMATIONS ==================== */
@@ -889,7 +626,6 @@ body {
 }
 
 /* ==================== 9. RESPONSIVE DESIGN ==================== */
-/* Responsive Design Enhancements */
 @media (max-height: 600px) {
     #control-panel {
         gap: 12px;
@@ -897,15 +633,9 @@ body {
     }
 
     .control-button {
-        width: 45px;
-        height: 45px;
-        font-size: 16px;
-    }
-
-    #model-info {
-        bottom: 90px;
-        padding: 8px 14px;
-        font-size: 12px;
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
     }
 
     #performance-stats {
@@ -916,15 +646,8 @@ body {
     #size-controls {
         gap: 12px;
     }
-
-    #size-controls .control-button {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-    }
 }
 
-/* Dark Mode Enhancements */
 @media (prefers-color-scheme: dark) {
     :root {
         --bg-color: rgba(20, 22, 30, 0.9);
@@ -932,7 +655,6 @@ body {
     }
 }
 
-/* Landscape Orientation Adjustments */
 @media (orientation: landscape) and (max-height: 500px) {
     #control-panel {
         right: 20px;
@@ -942,13 +664,6 @@ body {
         flex-direction: column;
         gap: 12px;
         left: auto;
-    }
-
-    #model-info {
-        bottom: auto;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
     }
 
     #size-controls {
@@ -972,20 +687,4 @@ body {
         top: auto;
         transform: translateX(-50%);
     }
-}
-
-/* ===== CUSTOM SCALE-UP FOR CONTROL PANEL & SIZE CONTROLS ===== */
-#control-panel .control-button,
-#size-controls .control-button {
-    width: 80px;
-    height: 80px;
-    font-size: 28px;
-}
-
-#size-controls {
-    gap: 20px;
-}
-
-#control-panel {
-    gap: 20px;
 }
