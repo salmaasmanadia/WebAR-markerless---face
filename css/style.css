@@ -227,7 +227,7 @@ input, button, select, textarea {
 
 .control-button:hover::before,
 .control-button:focus::before {
-    opacity: 1;
+    opacity: 0.5;
 }
 
 .control-button:hover,
@@ -383,7 +383,7 @@ input, button, select, textarea {
     -webkit-backdrop-filter: var(--backdrop-blur);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: var(--shadow-secondary);
-    max-width: 120px;
+    max-width: 240px;
 }
 
 #instructions {
@@ -842,7 +842,7 @@ input, button, select, textarea {
     #performance-stats {
         font-size: 10px;
         padding: var(--spacing-xs) var(--spacing-sm);
-        max-width: 100px;
+        max-width: 240px;
     }
     
     #instructions {
