@@ -253,21 +253,6 @@ class ARApplication {
      */
     resetControlPanel() {
         if (!this.elements.controlPanel) return;
-        
-        Object.assign(this.elements.controlPanel.style, {
-            display: 'flex',
-            flexDirection: 'row',
-            position: 'fixed',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            gap: '10px',
-            background: 'var(--bg-color)',
-            padding: '10px',
-            borderRadius: '30px',
-            visibility: 'visible',
-            opacity: '1'
-        });
     }
 
     /**
@@ -275,20 +260,6 @@ class ARApplication {
      */
     resetSizeControls() {
         if (!this.elements.sizeControls) return;
-        
-        Object.assign(this.elements.sizeControls.style, {
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'fixed',
-            right: '20px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            gap: '15px',
-            background: 'var(--bg-color)',
-            padding: '10px',
-            borderRadius: '20px',
-            opacity: '1'
-        });
     }
 
     /**
