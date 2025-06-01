@@ -1,6 +1,6 @@
 /**
  * Enhanced Performance Tracker with SpectorJS for GPU monitoring and object timing
- * Fixed version - prevents session ID flickering and ensures GPU usage tracking
+ * Fixed version with improved GC time tracking and alternative memory monitoring
  */
 class PerformanceTracker {
     constructor(options = {}) {
@@ -80,6 +80,18 @@ class PerformanceTracker {
             lastResetTime: performance.now()
         };
 
+        // FIXED: Enhanced GC monitoring variables
+        this.gcMonitoring = {
+            lastMemoryCheck: performance.now(),
+            previousHeapUsed: 0,
+            memoryDrops: [],
+            gcDetectedCount: 0,
+            totalGCTime: 0,
+            lastGCTime: 0,
+            memoryCheckInterval: 100, // Check every 100ms
+            significantDropThreshold: 1024 * 1024 // 1MB threshold for GC detection
+        };
+
         this._initialize();
     }
 
@@ -113,7 +125,8 @@ class PerformanceTracker {
         this._resetMetrics();
         this._startReporting();
         this._updateLoop();
-        this._startGPUMonitoring(); // FIXED: Start GPU monitoring
+        this._startGPUMonitoring(); // Start GPU monitoring
+        this._startGCMonitoring(); // FIXED: Start GC monitoring
         
         this._forceUIUpdate();
     }
@@ -125,7 +138,7 @@ class PerformanceTracker {
         }
         
         this.isTracking = false;
-        this.gpuMonitoringActive = false; // FIXED: Stop GPU monitoring
+        this.gpuMonitoringActive = false; // Stop GPU monitoring
         console.log('Performance tracking stopped for session:', this.sessionId);
 
         if (this.animationFrameId) {
@@ -137,6 +150,9 @@ class PerformanceTracker {
             clearInterval(this.reportingInterval);
             this.reportingInterval = null;
         }
+
+        // FIXED: Stop GC monitoring
+        this._stopGCMonitoring();
         
         this._forceUIUpdate();
     }
@@ -156,7 +172,7 @@ class PerformanceTracker {
             this.metrics.frameLatencies.shift();
         }
 
-        // FIXED: Update GPU usage estimation based on frame activity
+        // Update GPU usage estimation based on frame activity
         this._updateGPUUsageEstimation();
 
         if (now - this.metrics.lastFpsUpdateTime > this.options.updateInterval) {
@@ -283,7 +299,7 @@ class PerformanceTracker {
         this._getGPUInfo();
         this._initCPUMonitoring();
 
-        // FIXED: Initialize GPU monitoring regardless of SpectorJS availability
+        // Initialize GPU monitoring regardless of SpectorJS availability
         this._initAlternativeGPUMonitoring();
 
         if (this._isValidWebGLContext()) {
@@ -318,8 +334,9 @@ class PerformanceTracker {
         this.metrics.frameCount = 0;
         this.metrics.frameLatencies = [];
         this.metrics.trackingQuality = 'Initializing';
+        this.metrics.gcTime = 0; // FIXED: Reset GC time
         
-        // FIXED: Reset GPU stats
+        // Reset GPU stats
         this.webglStats = {
             drawCalls: 0,
             textureBinds: 0,
@@ -328,6 +345,17 @@ class PerformanceTracker {
             lastResetTime: now
         };
         this.drawCallHistory = [];
+
+        // FIXED: Reset GC monitoring data
+        this.gcMonitoring = {
+            ...this.gcMonitoring,
+            lastMemoryCheck: now,
+            previousHeapUsed: performance.memory ? performance.memory.usedJSHeapSize : 0,
+            memoryDrops: [],
+            gcDetectedCount: 0,
+            totalGCTime: 0,
+            lastGCTime: 0
+        };
     }
 
     _startReporting() {
@@ -384,7 +412,131 @@ class PerformanceTracker {
         }
     }
 
-    // FIXED: Alternative GPU monitoring method
+    // FIXED: Enhanced GC monitoring methods
+    _startGCMonitoring() {
+        if (!performance.memory) {
+            console.warn('performance.memory not available - GC monitoring disabled');
+            return;
+        }
+
+        console.log('Starting enhanced GC monitoring');
+        this.gcMonitoring.intervalId = setInterval(() => {
+            this._checkForGarbageCollection();
+        }, this.gcMonitoring.memoryCheckInterval);
+
+        // Also setup MutationObserver for DOM changes that might trigger GC
+        this._setupDOMObserver();
+    }
+
+    _stopGCMonitoring() {
+        if (this.gcMonitoring.intervalId) {
+            clearInterval(this.gcMonitoring.intervalId);
+            this.gcMonitoring.intervalId = null;
+        }
+        if (this.gcMonitoring.domObserver) {
+            this.gcMonitoring.domObserver.disconnect();
+            this.gcMonitoring.domObserver = null;
+        }
+    }
+
+    _checkForGarbageCollection() {
+        if (!this.isTracking || !performance.memory) return;
+
+        const now = performance.now();
+        const currentHeapUsed = performance.memory.usedJSHeapSize;
+        const heapLimit = performance.memory.totalJSHeapSize;
+        const previousHeap = this.gcMonitoring.previousHeapUsed;
+
+        // Detect potential GC by significant memory drop
+        const memoryDrop = previousHeap - currentHeapUsed;
+        
+        if (memoryDrop > this.gcMonitoring.significantDropThreshold && previousHeap > 0) {
+            // Estimate GC duration based on memory drop size and system performance
+            const gcDuration = this._estimateGCDuration(memoryDrop, currentHeapUsed, heapLimit);
+            
+            this.gcMonitoring.memoryDrops.push({
+                timestamp: now,
+                drop: memoryDrop,
+                duration: gcDuration,
+                beforeGC: previousHeap,
+                afterGC: currentHeapUsed
+            });
+
+            this.gcMonitoring.gcDetectedCount++;
+            this.gcMonitoring.totalGCTime += gcDuration;
+            this.gcMonitoring.lastGCTime = now;
+            this.metrics.gcTime = this.gcMonitoring.totalGCTime;
+
+            console.log(`GC detected: ${(memoryDrop / (1024*1024)).toFixed(2)}MB freed, estimated duration: ${gcDuration.toFixed(2)}ms`);
+
+            // Keep only recent GC events (last 50)
+            if (this.gcMonitoring.memoryDrops.length > 50) {
+                this.gcMonitoring.memoryDrops.shift();
+            }
+        }
+
+        // Additional GC detection based on heap pressure
+        const heapUsageRatio = currentHeapUsed / heapLimit;
+        if (heapUsageRatio > 0.85 && previousHeap > currentHeapUsed) {
+            // High memory pressure with memory drop likely indicates GC
+            const pressureGCDuration = Math.min(heapUsageRatio * 20, 50); // Max 50ms
+            this.gcMonitoring.totalGCTime += pressureGCDuration;
+            this.metrics.gcTime = this.gcMonitoring.totalGCTime;
+        }
+
+        this.gcMonitoring.previousHeapUsed = currentHeapUsed;
+        this.gcMonitoring.lastMemoryCheck = now;
+    }
+
+    _estimateGCDuration(memoryDropped, currentHeap, heapLimit) {
+        // Estimate GC duration based on various factors
+        const memoryDroppedMB = memoryDropped / (1024 * 1024);
+        const heapPressure = currentHeap / heapLimit;
+        
+        // Base duration calculation
+        let estimatedDuration = memoryDroppedMB * 0.5; // ~0.5ms per MB freed
+        
+        // Adjust for heap pressure (higher pressure = longer GC)
+        estimatedDuration *= (1 + heapPressure);
+        
+        // Adjust for system performance (based on current FPS)
+        const fpsImpact = Math.max(0, (60 - this.metrics.fps) / 60);
+        estimatedDuration *= (1 + fpsImpact * 0.5);
+        
+        // Clamp between reasonable bounds
+        return Math.max(0.1, Math.min(estimatedDuration, 100));
+    }
+
+    _setupDOMObserver() {
+        if (!MutationObserver) return;
+
+        this.gcMonitoring.domObserver = new MutationObserver((mutations) => {
+            if (!this.isTracking) return;
+            
+            let significantChanges = 0;
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    significantChanges += mutation.addedNodes.length + mutation.removedNodes.length;
+                }
+            });
+
+            // Large DOM changes might trigger GC
+            if (significantChanges > 10) {
+                const estimatedGCFromDOM = Math.min(significantChanges * 0.1, 5);
+                this.gcMonitoring.totalGCTime += estimatedGCFromDOM;
+                this.metrics.gcTime = this.gcMonitoring.totalGCTime;
+            }
+        });
+
+        this.gcMonitoring.domObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: false,
+            characterData: false
+        });
+    }
+
+    // Alternative GPU monitoring method
     _initAlternativeGPUMonitoring() {
         // Monitor canvas activity as GPU usage indicator
         this._monitorCanvasActivity();
@@ -602,7 +754,7 @@ class PerformanceTracker {
             this.isTracking ? this._getColorFromUsage(this.metrics.cpuUsage) : null);
         setElement('gpu', this.metrics.gpuInfo);
         
-        // FIXED: GPU Usage display with color coding
+        // GPU Usage display with color coding
         setElement('gpuUsage', this.metrics.gpuUsage, 'percentage',
             this.isTracking ? this._getColorFromUsage(this.metrics.gpuUsage) : null);
 
@@ -613,7 +765,10 @@ class PerformanceTracker {
         // Timing metrics
         setElement('renderTime', this.metrics.renderTime, 'time');
         setElement('jsExecutionTime', this.metrics.jsExecutionTime, 'time');
-        setElement('gcTime', this.metrics.gcTime, 'time');
+        
+        // FIXED: GC Time display with proper color coding
+        setElement('gcTime', this.metrics.gcTime, 'time',
+            this.isTracking ? this._getColorFromGCTime(this.metrics.gcTime) : null);
 
         // Object timing
         const lastObjectId = Object.keys(this.metrics.objectTimings).pop();
@@ -999,6 +1154,14 @@ class PerformanceTracker {
         if (usage < 30) return '#4CAF50';
         if (usage < 60) return '#FFC107';
         if (usage < 85) return '#FF9800';
+        return '#F44336';
+    }
+    
+    _getColorFromGCTime(gcTime) {
+        if (gcTime < 50) return '#4CAF50';
+        if (gcTime < 100) return '#8BC34A';
+        if (gcTime < 200) return '#FFEB3B';
+        if (gcTime < 500) return '#FFC107';
         return '#F44336';
     }
 
