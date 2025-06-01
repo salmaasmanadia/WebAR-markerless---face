@@ -802,25 +802,44 @@ class PerformanceTracker {
             };
         });
         
+        // FIXED: Match exact field names expected by Google Sheets
         return {
+            // Basic session info
             sessionId: this.sessionId,
             timestamp: new Date().toISOString(),
             elapsedTime: elapsedTime.toFixed(1),
+            
+            // Performance metrics
             fps: this.metrics.fps,
             latency: this.metrics.latency.toFixed(1),
             memory: this.metrics.memory,
+            
+            // System usage
             cpu: this.metrics.cpuUsage.toFixed(1),
+            gpuUsage: this.metrics.gpuUsage.toFixed(1), // FIXED: Ensure this field is included
+            
+            // GPU info
             gpu: this.metrics.gpuInfo,
-            gpuUsage: this.metrics.gpuUsage.toFixed(1),
+            gpuInfo: this.metrics.gpuInfo, // FIXED: Add both gpu and gpuInfo for compatibility
+            
+            // Tracking metrics
             trackingQuality: this.metrics.trackingQuality,
             trackingConfidence: this.metrics.trackingConfidence.toFixed(2),
             surfacesDetected: this.metrics.surfacesDetected,
+            
+            // Frame metrics
             droppedFrames: this.metrics.droppedFrames,
             totalFrames: this.metrics.totalFrames,
+            
+            // Timing metrics - FIXED: Add these missing fields
             renderTime: this.metrics.renderTime.toFixed(2),
             jsExecutionTime: this.metrics.jsExecutionTime.toFixed(2),
             gcTime: this.metrics.gcTime.toFixed(2),
-            objectTimings: formattedObjectTimings,
+            
+            // Object timings
+            objectTimings: JSON.stringify(formattedObjectTimings), // FIXED: Stringify for sheet compatibility
+            
+            // Device info - spread at the end to avoid overriding
             ...this.options.deviceInfo
         };
     }
@@ -1156,7 +1175,7 @@ class PerformanceTracker {
         if (usage < 85) return '#FF9800';
         return '#F44336';
     }
-    
+
     _getColorFromGCTime(gcTime) {
         if (gcTime < 50) return '#4CAF50';
         if (gcTime < 100) return '#8BC34A';

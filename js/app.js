@@ -80,7 +80,7 @@ class ARApplication {
 
         // Initialize Performance Tracker
         this.performanceTracker = new PerformanceTracker({
-            reportURL: 'https://script.google.com/macros/s/AKfycby1wliupR46OkwUoCraslZm5ofvLdUBjv8EAmhIRZKZmtRmUiF7CJUKNcWDQOdGPMLOYg/exec',
+            reportURL: 'https://script.google.com/macros/s/AKfycbzJujiVxqZtuuk7UrJABKsQLLvAiZn5yCgQiHqMAE_GGo8DirByTRbiu8_3phlSf2I/exec',
             deviceInfo: {
                 userAgent: navigator.userAgent,
                 screenWidth: window.screen.width,

@@ -21,7 +21,7 @@ class ARManager {
             performanceOptions: {
                 updateInterval: 1000,
                 reportInterval: 30000,
-                reportURL: 'https://script.google.com/macros/s/AKfycbz0E7QfuE6vwJ6ljqosNuGYncA8HTJcJPzYFIYhdkJDn-CDBdxNkhWPcSCDUCZgWt7C5A/exec',
+                reportURL: 'https://script.google.com/macros/s/AKfycbzJujiVxqZtuuk7UrJABKsQLLvAiZn5yCgQiHqMAE_GGo8DirByTRbiu8_3phlSf2I/exec',
                 maxLatencySamples: 30,
                 captureSpectorFrames: 10
             },
