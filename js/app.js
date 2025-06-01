@@ -11,6 +11,8 @@ class ARApplication {
         this.xrSession = null;
         this.webGLContext = null;
         this.isLoading = true;
+        this.trackingInterval = null;
+        this.isTrackingActive = false;
         
         // Cache DOM elements
         this.elements = {
@@ -113,7 +115,7 @@ class ARApplication {
      * Setup interval updates
      */
     setupIntervalUpdates() {
-        setInterval(() => this.updateTrackingQuality(), 1000);
+        // Don't start interval here - wait for AR session
     }
 
     /**
@@ -122,7 +124,7 @@ class ARApplication {
     finishInitialization() {
         this.elements.startButton.style.display = 'block';
         this.uiManager.showNotification('AR experience ready! World-locked mode active.', 5000);
-        this.performanceTracker.start();
+        // Don't start tracking yet - wait for AR session to begin
     }
 
     /**
@@ -144,6 +146,13 @@ class ARApplication {
     startExperience() {
         document.body.classList.add('ar-mode');
         document.body.classList.remove('normal-mode');
+        
+        // Start performance tracking when AR session begins
+        this.isTrackingActive = true;
+        this.performanceTracker.start();
+        
+        // Start tracking quality updates interval
+        this.trackingInterval = setInterval(() => this.updateTrackingQuality(), 1000);
         
         this.performanceTracker.markObjectLoadStart('ar-session');
         this.arManager.startARSession();
@@ -176,6 +185,14 @@ class ARApplication {
         console.log('Ending AR session properly...');
         const session = this.arManager.state.xrSession;
         
+        // Stop tracking and clear interval
+        this.isTrackingActive = false;
+        if (this.trackingInterval) {
+            clearInterval(this.trackingInterval);
+            this.trackingInterval = null;
+        }
+        
+        this.performanceTracker.stop();
         this.performanceTracker.reportToServer();
         
         session.end().then(() => {
@@ -266,6 +283,11 @@ class ARApplication {
      * Update tracking quality
      */
     updateTrackingQuality() {
+        // Only update if tracking is active
+        if (!this.isTrackingActive || !this.performanceTracker || !this.arManager?.state?.xrSession) {
+            return;
+        }
+
         const fps = this.performanceTracker.metrics.fps;
         const hitTestResults = this.arManager.state?.xrHitTestResults || [];
         const surfacesCount = hitTestResults.length;
@@ -298,6 +320,8 @@ class ARApplication {
      * Place object with performance tracking
      */
     placeObject() {
+        if (!this.isTrackingActive) return;
+        
         const objId = `placed-object-${Date.now()}`;
         this.performanceTracker.markObjectLoadStart(objId);
         this.arManager.placeObject();
@@ -308,10 +332,16 @@ class ARApplication {
      * Change model with performance tracking
      */
     changeModel() {
-        const modelId = `model-change-${Date.now()}`;
-        this.performanceTracker.markObjectLoadStart(modelId);
-        this.arManager.nextModel();
-        setTimeout(() => this.performanceTracker.markObjectAppeared(modelId), 200);
+        // Always allow model change, but only track performance if in AR mode
+        if (this.isTrackingActive) {
+            const modelId = `model-change-${Date.now()}`;
+            this.performanceTracker.markObjectLoadStart(modelId);
+            this.arManager.nextModel();
+            setTimeout(() => this.performanceTracker.markObjectAppeared(modelId), 200);
+        } else {
+            // Just change model without performance tracking
+            this.arManager.nextModel();
+        }
     }
 
     /**
@@ -336,7 +366,8 @@ class ARApplication {
             setTimeout(() => {
                 this.uiManager?._adjustUIForScreen();
                 if (!this.xrSession) this.resetControlPanel();
-                if (this.performanceTracker) {
+                // Only report orientation change if tracking is active
+                if (this.performanceTracker && this.isTrackingActive) {
                     this.performanceTracker.options.deviceInfo.orientation = window.orientation || 0;
                     this.performanceTracker.reportToServer();
                 }
@@ -350,9 +381,15 @@ class ARApplication {
                 if (!this.xrSession && this.uiManager) {
                     this.uiManager.updateARSessionState(false);
                 }
-                this.performanceTracker?.start();
+                // Only restart tracking if we're in AR mode and tracking was active
+                if (this.arManager?.state?.xrSession && this.isTrackingActive) {
+                    this.performanceTracker?.start();
+                }
             } else {
-                this.performanceTracker?.stop();
+                // Only stop tracking if it was active
+                if (this.isTrackingActive) {
+                    this.performanceTracker?.stop();
+                }
             }
         });
     }
@@ -375,12 +412,20 @@ class ARApplication {
             'M': () => this.changeModel(),
             'Escape': () => this.exitARMode(),
             'p': () => {
-                this.performanceTracker.reportToServer();
-                this.uiManager.showNotification('Performance data reported', 2000);
+                if (this.isTrackingActive) {
+                    this.performanceTracker.reportToServer();
+                    this.uiManager.showNotification('Performance data reported', 2000);
+                } else {
+                    this.uiManager.showNotification('No active AR session to report', 2000);
+                }
             },
             'P': () => {
-                this.performanceTracker.reportToServer();
-                this.uiManager.showNotification('Performance data reported', 2000);
+                if (this.isTrackingActive) {
+                    this.performanceTracker.reportToServer();
+                    this.uiManager.showNotification('Performance data reported', 2000);
+                } else {
+                    this.uiManager.showNotification('No active AR session to report', 2000);
+                }
             }
         };
 
